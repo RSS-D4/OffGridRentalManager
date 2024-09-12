@@ -55,4 +55,55 @@ def get_dashboard_data():
         'internet_accesses': internet_accesses
     })
 
-# Add other route handlers here
+@bp.route('/api/customers', methods=['GET'])
+def get_customers():
+    customers = Customer.query.all()
+    return jsonify([{
+        'id': c.id,
+        'name': c.name,
+        'phone': c.phone,
+        'address': c.address
+    } for c in customers])
+
+@bp.route('/api/customers', methods=['POST'])
+def add_customer():
+    data = request.json
+    new_customer = Customer(name=data['name'], phone=data['phone'], address=data['address'])
+    db.session.add(new_customer)
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Customer added successfully'}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Phone number already exists'}), 400
+
+@bp.route('/api/customers/<int:customer_id>', methods=['GET'])
+def get_customer(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    return jsonify({
+        'id': customer.id,
+        'name': customer.name,
+        'phone': customer.phone,
+        'address': customer.address
+    })
+
+@bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
+def update_customer(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    data = request.json
+    customer.name = data['name']
+    customer.phone = data['phone']
+    customer.address = data['address']
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Customer updated successfully'})
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Phone number already exists'}), 400
+
+@bp.route('/api/customers/<int:customer_id>', methods=['DELETE'])
+def delete_customer(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    db.session.delete(customer)
+    db.session.commit()
+    return jsonify({'message': 'Customer deleted successfully'})
