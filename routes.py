@@ -4,7 +4,6 @@ from models import Customer, BatteryRental, WaterSale, InternetAccess
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
-import base64
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -48,7 +47,9 @@ def list_customers():
         customers = Customer.query.all()
         return jsonify([{
             'id': customer.id,
-            'name': customer.name,
+            'first_name': customer.first_name,
+            'middle_name': customer.middle_name,
+            'family_name': customer.family_name,
             'phone': customer.phone,
             'address': customer.address
         } for customer in customers])
@@ -62,12 +63,15 @@ def get_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         return jsonify({
             'id': customer.id,
-            'name': customer.name,
+            'first_name': customer.first_name,
+            'middle_name': customer.middle_name,
+            'family_name': customer.family_name,
             'phone': customer.phone,
             'address': customer.address,
             'date_of_birth': customer.date_of_birth,
-            'id_number': customer.id_number,
-            'id_type': customer.id_type
+            'city_of_birth': customer.city_of_birth,
+            'id_type': customer.id_type,
+            'id_number': customer.id_number
         })
     except Exception as e:
         logger.error(f"Error getting customer {customer_id}: {str(e)}")
@@ -82,12 +86,15 @@ def create_customer():
 
         # Create new customer instance
         customer = Customer(
-            name=data['name'],
+            first_name=data['first_name'],
+            middle_name=data.get('middle_name'),
+            family_name=data['family_name'],
             phone=data['phone'],
-            address=data['address'],
-            date_of_birth=data.get('date_of_birth'),
-            id_number=data.get('id_number'),
-            id_type=data.get('id_type')
+            address=data.get('address'),
+            date_of_birth=data['date_of_birth'],
+            city_of_birth=data['city_of_birth'],
+            id_type=data['id_type'],
+            id_number=data['id_number']
         )
 
         # Handle photo uploads
@@ -127,11 +134,17 @@ def update_customer(customer_id):
     data = request.json
     logger.debug(f"Updating customer {customer_id} with data: {data}")
     try:
-        if 'name' not in data or 'phone' not in data or 'address' not in data:
+        if 'first_name' not in data or 'family_name' not in data or 'phone' not in data or 'address' not in data:
             raise KeyError('Missing required fields')
-        customer.name = data['name']
+        customer.first_name = data['first_name']
+        customer.middle_name = data.get('middle_name')
+        customer.family_name = data['family_name']
         customer.phone = data['phone']
         customer.address = data['address']
+        customer.date_of_birth = data.get('date_of_birth')
+        customer.city_of_birth = data.get('city_of_birth')
+        customer.id_type = data.get('id_type')
+        customer.id_number = data.get('id_number')
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")
         return jsonify({'message': 'Customer updated successfully'})

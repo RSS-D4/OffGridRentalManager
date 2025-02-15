@@ -5,14 +5,17 @@ from datetime import datetime
 
 class Customer(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    middle_name: Mapped[str] = mapped_column(String(50), nullable=True)
+    family_name: Mapped[str] = mapped_column(String(50), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
-    address: Mapped[str] = mapped_column(String(200))
+    address: Mapped[str] = mapped_column(String(200), nullable=True)
 
     # KYC Information
-    date_of_birth: Mapped[str] = mapped_column(String(10), nullable=True)
-    id_number: Mapped[str] = mapped_column(String(50), nullable=True)
-    id_type: Mapped[str] = mapped_column(String(50), nullable=True)  # passport, national id, etc.
+    date_of_birth: Mapped[str] = mapped_column(String(10), nullable=False)
+    city_of_birth: Mapped[str] = mapped_column(String(100), nullable=False)
+    id_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    id_number: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Photo storage
     selfie_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
