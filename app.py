@@ -16,11 +16,8 @@ def create_app():
         import models
         db.create_all()
 
-        from routes import bp, add_sample_data
+        from routes import bp
         app.register_blueprint(bp)
-        
-        # Initialize sample data
-        add_sample_data()
 
     @app.route('/')
     def index():

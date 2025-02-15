@@ -1,5 +1,5 @@
 from app import db
-from sqlalchemy import Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
@@ -8,7 +8,19 @@ class Customer(db.Model):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     address: Mapped[str] = mapped_column(String(200))
+
+    # KYC Information
+    date_of_birth: Mapped[str] = mapped_column(String(10), nullable=True)
+    id_number: Mapped[str] = mapped_column(String(50), nullable=True)
+    id_type: Mapped[str] = mapped_column(String(50), nullable=True)  # passport, national id, etc.
+
+    # Photo storage
+    selfie_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
+    id_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
+    bill_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class BatteryRental(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
