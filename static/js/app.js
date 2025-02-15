@@ -26,8 +26,6 @@ function loadDashboard() {
 
 function loadCustomers() {
     const app = document.getElementById('app');
-    if (!app) return;
-
     app.innerHTML = `
         <h2>Customer Management</h2>
         <button onclick="loadAddCustomerForm()" class="add-button">Add New Customer</button>
@@ -37,7 +35,7 @@ function loadCustomers() {
                     <tr>
                         <th>Name</th>
                         <th>Phone</th>
-                        <th>Address</th>
+                        <th>City</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -58,10 +56,10 @@ function loadCustomers() {
                     <tr>
                         <td>${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</td>
                         <td>${customer.phone}</td>
-                        <td>${customer.address ? `${customer.address}${customer.city ? `, ${customer.city}` : ''}` : 'N/A'}</td>
+                        <td>${customer.city || 'N/A'}</td>
                         <td>
-                            <button onclick="editCustomer(${customer.id})">Edit</button>
                             <button onclick="viewCustomerDetails(${customer.id})">View Details</button>
+                            <button onclick="editCustomer(${customer.id})">Edit</button>
                         </td>
                     </tr>
                 `).join('');
@@ -76,13 +74,11 @@ function loadCustomers() {
         });
 }
 
-// Add new customer form
 function loadAddCustomerForm() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <h2>Add New Customer</h2>
         <form id="addCustomerForm" enctype="multipart/form-data">
-            <!-- Name Fields -->
             <div class="form-group">
                 <label for="first_name">First Name:</label>
                 <input type="text" id="first_name" name="first_name" required>
@@ -107,8 +103,6 @@ function loadAddCustomerForm() {
                 <label for="city">City:</label>
                 <input type="text" id="city" name="city">
             </div>
-
-            <!-- KYC Information -->
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth:</label>
                 <input type="date" id="date_of_birth" name="date_of_birth" required>
@@ -131,24 +125,25 @@ function loadAddCustomerForm() {
                 <input type="text" id="id_number" name="id_number" required>
             </div>
 
-            <!-- Photo Uploads -->
+            <!-- Optional Photo Uploads -->
             <div class="form-group">
-                <label for="selfie_photo">Selfie Photo: (Optional)</label>
-                <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*" capture="user">
+                <label for="selfie_photo">Selfie Photo (Optional):</label>
+                <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
                 <div id="selfie_preview" class="photo-preview"></div>
             </div>
             <div class="form-group">
-                <label for="id_photo">ID Photo: (Optional)</label>
+                <label for="id_photo">ID Photo (Optional):</label>
                 <input type="file" id="id_photo" name="id_photo" accept="image/*">
                 <div id="id_preview" class="photo-preview"></div>
             </div>
             <div class="form-group">
-                <label for="bill_photo">Bill Photo: (Optional)</label>
+                <label for="bill_photo">Bill Photo (Optional):</label>
                 <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
                 <div id="bill_preview" class="photo-preview"></div>
             </div>
 
             <button type="submit">Add Customer</button>
+            <button type="button" onclick="loadCustomers()">Cancel</button>
         </form>
     `;
 
@@ -186,13 +181,9 @@ function loadAddCustomerForm() {
 
                 if (response.ok) {
                     alert('Customer added successfully!');
-                    // Instead of immediately reloading the customer list,
-                    // add a slight delay to ensure server-side processing is complete
-                    setTimeout(() => {
-                        loadCustomers();
-                    }, 500);
+                    loadCustomers();
                 } else {
-                    alert(`Failed to add customer: ${result.error || 'Unknown error occurred'}`);
+                    alert(`Failed to add customer: ${result.error}`);
                 }
             } catch (error) {
                 console.error('Error adding customer:', error);
@@ -334,34 +325,35 @@ async function editCustomer(customerId) {
 }
 
 
-// Navigation handler
+// Initialize page on load
 document.addEventListener('DOMContentLoaded', () => {
+    // Set up navigation
     const nav = document.querySelector('nav');
-    nav.addEventListener('click', (e) => {
-        if (e.target.matches('a')) {
-            e.preventDefault();
-            const page = e.target.dataset.page;
-            switch (page) {
-                case 'dashboard':
-                    loadDashboard();
-                    break;
-                case 'customers':
-                    loadCustomers();
-                    break;
-                case 'rentals':
-                    loadBatteryRentals();
-                    break;
-                case 'water':
-                    loadWaterSales();
-                    break;
-                case 'internet':
-                    loadInternetAccess();
-                    break;
-                default:
-                    console.error('Unknown page:', page);
+    if (nav) {
+        nav.addEventListener('click', (e) => {
+            if (e.target.matches('a')) {
+                e.preventDefault();
+                const page = e.target.dataset.page;
+                switch (page) {
+                    case 'dashboard':
+                        loadDashboard();
+                        break;
+                    case 'customers':
+                        loadCustomers();
+                        break;
+                    case 'rentals':
+                        loadBatteryRentals();
+                        break;
+                    case 'water':
+                        loadWaterSales();
+                        break;
+                    case 'internet':
+                        loadInternetAccess();
+                        break;
+                }
             }
-        }
-    });
+        });
+    }
 
     // Load dashboard by default
     loadDashboard();

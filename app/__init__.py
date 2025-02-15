@@ -2,6 +2,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class Base(DeclarativeBase):
     pass
@@ -19,11 +24,12 @@ def create_app():
 
     with app.app_context():
         # Import models here to avoid circular imports
-        from . import models
+        from app.models import Customer, BatteryRental, WaterSale, InternetAccess
         db.create_all()
 
-        from . import routes
-        app.register_blueprint(routes.bp)
+        # Import routes after models are initialized
+        from app.routes import bp
+        app.register_blueprint(bp)
 
     @app.route('/')
     def index():
