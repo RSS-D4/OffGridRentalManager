@@ -12,6 +12,67 @@ logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
 
+@bp.route('/api/dashboard/stats')
+def get_dashboard_stats():
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=30)
+
+        rentals = BatteryRental.query.filter(
+            BatteryRental.rented_at >= start_date,
+            BatteryRental.rented_at <= end_date
+        ).count()
+
+        water_sales = WaterSale.query.filter(
+            WaterSale.sold_at >= start_date,
+            WaterSale.sold_at <= end_date
+        ).count()
+
+        internet_accesses = InternetAccess.query.filter(
+            InternetAccess.purchased_at >= start_date,
+            InternetAccess.purchased_at <= end_date
+        ).count()
+
+        return jsonify({
+            'rentals': rentals,
+            'water_sales': water_sales,
+            'internet_accesses': internet_accesses
+        })
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {str(e)}")
+        return jsonify({'error': 'Failed to load dashboard statistics'}), 500
+
+@bp.route('/api/customers')
+def list_customers():
+    try:
+        customers = Customer.query.all()
+        return jsonify([{
+            'id': customer.id,
+            'name': customer.name,
+            'phone': customer.phone,
+            'address': customer.address
+        } for customer in customers])
+    except Exception as e:
+        logger.error(f"Error listing customers: {str(e)}")
+        return jsonify({'error': 'Failed to load customers'}), 500
+
+@bp.route('/api/customers/<int:customer_id>')
+def get_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        return jsonify({
+            'id': customer.id,
+            'name': customer.name,
+            'phone': customer.phone,
+            'address': customer.address,
+            'date_of_birth': customer.date_of_birth,
+            'id_number': customer.id_number,
+            'id_type': customer.id_type
+        })
+    except Exception as e:
+        logger.error(f"Error getting customer {customer_id}: {str(e)}")
+        return jsonify({'error': f'Failed to load customer {customer_id}'}), 500
+
 @bp.route('/api/customers', methods=['POST'])
 def create_customer():
     logger.info("Received POST request to create customer")
