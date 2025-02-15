@@ -18,7 +18,7 @@ class Customer(db.Model):
     id_type: Mapped[str] = mapped_column(String(50), nullable=False)
     id_number: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # Photo storage
+    # Photo storage - explicitly marked as nullable
     selfie_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     id_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)
     bill_photo: Mapped[bytes] = mapped_column(LargeBinary, nullable=True)

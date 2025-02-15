@@ -26,6 +26,8 @@ function loadDashboard() {
 
 function loadCustomers() {
     const app = document.getElementById('app');
+    if (!app) return;
+
     app.innerHTML = `
         <h2>Customer Management</h2>
         <button onclick="loadAddCustomerForm()" class="add-button">Add New Customer</button>
@@ -51,22 +53,26 @@ function loadCustomers() {
         .then(response => response.json())
         .then(customers => {
             const tbody = document.getElementById('customersTableBody');
-            tbody.innerHTML = customers.map(customer => `
-                <tr>
-                    <td>${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</td>
-                    <td>${customer.phone}</td>
-                    <td>${customer.address || 'N/A'}</td>
-                    <td>
-                        <button onclick="editCustomer(${customer.id})">Edit</button>
-                        <button onclick="viewCustomerDetails(${customer.id})">View Details</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (tbody) {
+                tbody.innerHTML = customers.map(customer => `
+                    <tr>
+                        <td>${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</td>
+                        <td>${customer.phone}</td>
+                        <td>${customer.address ? `${customer.address}${customer.city ? `, ${customer.city}` : ''}` : 'N/A'}</td>
+                        <td>
+                            <button onclick="editCustomer(${customer.id})">Edit</button>
+                            <button onclick="viewCustomerDetails(${customer.id})">View Details</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
         })
         .catch(error => {
             console.error('Error loading customers:', error);
-            document.getElementById('customersTableBody').innerHTML = 
-                '<tr><td colspan="4">Error loading customers</td></tr>';
+            const tbody = document.getElementById('customersTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4">Error loading customers</td></tr>';
+            }
         });
 }
 
@@ -127,17 +133,17 @@ function loadAddCustomerForm() {
 
             <!-- Photo Uploads -->
             <div class="form-group">
-                <label for="selfie_photo">Selfie Photo:</label>
+                <label for="selfie_photo">Selfie Photo: (Optional)</label>
                 <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*" capture="user">
                 <div id="selfie_preview" class="photo-preview"></div>
             </div>
             <div class="form-group">
-                <label for="id_photo">ID Photo:</label>
+                <label for="id_photo">ID Photo: (Optional)</label>
                 <input type="file" id="id_photo" name="id_photo" accept="image/*">
                 <div id="id_preview" class="photo-preview"></div>
             </div>
             <div class="form-group">
-                <label for="bill_photo">Bill Photo:</label>
+                <label for="bill_photo">Bill Photo: (Optional)</label>
                 <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
                 <div id="bill_preview" class="photo-preview"></div>
             </div>
@@ -150,42 +156,50 @@ function loadAddCustomerForm() {
     ['selfie_photo', 'id_photo', 'bill_photo'].forEach(id => {
         const input = document.getElementById(id);
         const preview = document.getElementById(id + '_preview');
-        input.addEventListener('change', function(e) {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+        if (input && preview) {
+            input.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
     });
 
     // Handle form submission
     const form = document.getElementById('addCustomerForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
 
-        try {
-            const response = await fetch('/api/customers', {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const response = await fetch('/api/customers', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            if (response.ok) {
                 const result = await response.json();
-                alert('Customer added successfully!');
-                loadCustomers(); // Redirect to customers list
-            } else {
-                const errorData = await response.json();
-                alert(`Failed to add customer: ${errorData.error}`);
+
+                if (response.ok) {
+                    alert('Customer added successfully!');
+                    // Instead of immediately reloading the customer list,
+                    // add a slight delay to ensure server-side processing is complete
+                    setTimeout(() => {
+                        loadCustomers();
+                    }, 500);
+                } else {
+                    alert(`Failed to add customer: ${result.error || 'Unknown error occurred'}`);
+                }
+            } catch (error) {
+                console.error('Error adding customer:', error);
+                alert('Failed to add customer. Please try again.');
             }
-        } catch (error) {
-            console.error('Error adding customer:', error);
-            alert('Failed to add customer. Please try again.');
-        }
-    });
+        });
+    }
 }
 
 function loadBatteryRentals() {
