@@ -71,7 +71,8 @@ def get_customer(customer_id):
             'date_of_birth': customer.date_of_birth,
             'city_of_birth': customer.city_of_birth,
             'id_type': customer.id_type,
-            'id_number': customer.id_number
+            'id_number': customer.id_number,
+            'city': customer.city
         })
     except Exception as e:
         logger.error(f"Error getting customer {customer_id}: {str(e)}")
@@ -91,6 +92,7 @@ def create_customer():
             family_name=data['family_name'],
             phone=data['phone'],
             address=data.get('address'),
+            city=data.get('city'),
             date_of_birth=data['date_of_birth'],
             city_of_birth=data['city_of_birth'],
             id_type=data['id_type'],
@@ -141,6 +143,7 @@ def update_customer(customer_id):
         customer.family_name = data['family_name']
         customer.phone = data['phone']
         customer.address = data['address']
+        customer.city = data.get('city')
         customer.date_of_birth = data.get('date_of_birth')
         customer.city_of_birth = data.get('city_of_birth')
         customer.id_type = data.get('id_type')

@@ -97,6 +97,10 @@ function loadAddCustomerForm() {
                 <label for="address">Address: (Optional)</label>
                 <input type="text" id="address" name="address">
             </div>
+            <div class="form-group">
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city">
+            </div>
 
             <!-- KYC Information -->
             <div class="form-group">

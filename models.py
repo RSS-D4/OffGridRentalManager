@@ -10,6 +10,7 @@ class Customer(db.Model):
     family_name: Mapped[str] = mapped_column(String(50), nullable=False)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     address: Mapped[str] = mapped_column(String(200), nullable=True)
+    city: Mapped[str] = mapped_column(String(100), nullable=True)
 
     # KYC Information
     date_of_birth: Mapped[str] = mapped_column(String(10), nullable=False)
