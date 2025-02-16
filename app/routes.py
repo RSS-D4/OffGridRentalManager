@@ -45,7 +45,7 @@ def get_dashboard_stats():
 def list_customers():
     try:
         customers = Customer.query.all()
-        return jsonify([{
+        customer_list = [{
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
@@ -57,12 +57,14 @@ def list_customers():
             'city_of_birth': customer.city_of_birth,
             'id_type': customer.id_type,
             'id_number': customer.id_number
-        } for customer in customers])
+        } for customer in customers]
+        logger.debug(f"Returning customer list: {customer_list}")
+        return jsonify(customer_list)
     except Exception as e:
         logger.error(f"Error listing customers: {str(e)}")
         return jsonify({'error': 'Failed to load customers'}), 500
 
-@bp.route('/api/customers/<int:customer_id>')
+@bp.route('/api/customers/<int:customer_id>', methods=['GET'])
 def get_customer(customer_id):
     try:
         customer = Customer.query.get_or_404(customer_id)
@@ -107,17 +109,17 @@ def create_customer():
         # Handle optional photo uploads
         if 'selfie_photo' in request.files:
             file = request.files['selfie_photo']
-            if file.filename:
+            if file and file.filename:
                 customer.selfie_photo = file.read()
-        
+
         if 'id_photo' in request.files:
             file = request.files['id_photo']
-            if file.filename:
+            if file and file.filename:
                 customer.id_photo = file.read()
-        
+
         if 'bill_photo' in request.files:
             file = request.files['bill_photo']
-            if file.filename:
+            if file and file.filename:
                 customer.bill_photo = file.read()
 
         db.session.add(customer)
@@ -140,4 +142,4 @@ def create_customer():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Unexpected error while creating customer: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An unexpected error occurred'}), 500
