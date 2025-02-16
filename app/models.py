@@ -19,13 +19,23 @@ class Customer(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class Battery(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # 'battery' or 'charging'
+    capacity = db.Column(db.String(50), nullable=True)  # Can be null for phone charging options
+    quantity = db.Column(db.Integer, default=0)  # Only used for battery types
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class BatteryRental(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
-    battery_type = db.Column(db.String(50), nullable=False)
+    battery_id = db.Column(db.Integer, db.ForeignKey('battery.id'), nullable=False)
     rented_at = db.Column(db.DateTime, default=datetime.utcnow)
     returned_at = db.Column(db.DateTime, nullable=True)
     customer = db.relationship("Customer", backref="rentals")
+    battery = db.relationship("Battery", backref="rentals")
 
 class WaterSale(db.Model):
     id = db.Column(db.Integer, primary_key=True)

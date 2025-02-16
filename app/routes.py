@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 from app import db
-from app.models import Customer, BatteryRental, WaterSale, InternetAccess
+from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery # Added Battery model import
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
@@ -11,6 +11,111 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
+
+@bp.route('/api/batteries', methods=['GET'])
+def list_batteries():
+    try:
+        batteries = Battery.query.all()
+        return jsonify([{
+            'id': b.id,
+            'name': b.name,
+            'type': b.type,
+            'capacity': b.capacity,
+            'quantity': b.quantity
+        } for b in batteries])
+    except Exception as e:
+        logger.error(f"Error listing batteries: {str(e)}")
+        return jsonify({'error': 'Failed to load batteries'}), 500
+
+@bp.route('/api/batteries', methods=['POST'])
+def create_battery():
+    try:
+        data = request.get_json()
+        battery = Battery(
+            name=data['name'],
+            type=data['type'],
+            capacity=data.get('capacity'),
+            quantity=data.get('quantity', 0) if data['type'] == 'battery' else 0
+        )
+        db.session.add(battery)
+        db.session.commit()
+        return jsonify({
+            'message': 'Battery created successfully',
+            'battery_id': battery.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating battery: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/batteries/<int:battery_id>', methods=['PUT'])
+def update_battery(battery_id):
+    try:
+        battery = Battery.query.get_or_404(battery_id)
+        data = request.get_json()
+
+        if 'name' in data:
+            battery.name = data['name']
+        if 'quantity' in data and battery.type == 'battery':
+            battery.quantity = data['quantity']
+
+        db.session.commit()
+        return jsonify({'message': 'Battery updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating battery: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/rentals', methods=['POST'])
+def create_rental():
+    try:
+        data = request.get_json()
+        customer = Customer.query.get_or_404(data['customer_id'])
+        battery = Battery.query.get_or_404(data['battery_id'])
+
+        # For battery types, check quantity
+        if battery.type == 'battery' and battery.quantity <= 0:
+            return jsonify({'error': 'No batteries available for rent'}), 400
+
+        rental = BatteryRental(
+            customer_id=customer.id,
+            battery_id=battery.id
+        )
+
+        if battery.type == 'battery':
+            battery.quantity -= 1
+
+        db.session.add(rental)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Rental created successfully',
+            'rental_id': rental.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating rental: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/rentals/<int:rental_id>/return', methods=['POST'])
+def return_rental(rental_id):
+    try:
+        rental = BatteryRental.query.get_or_404(rental_id)
+        if rental.returned_at:
+            return jsonify({'error': 'Rental already returned'}), 400
+
+        rental.returned_at = datetime.utcnow()
+
+        # Increment battery quantity if it's a battery type
+        if rental.battery.type == 'battery':
+            rental.battery.quantity += 1
+
+        db.session.commit()
+        return jsonify({'message': 'Rental returned successfully'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error returning rental: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/dashboard/stats')
 def get_dashboard_stats():

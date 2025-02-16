@@ -35,7 +35,7 @@ def create_app():
 
     with app.app_context():
         # Import models here to avoid circular imports
-        from app.models import Customer, BatteryRental, WaterSale, InternetAccess
+        from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery
 
         try:
             # Drop all tables and recreate them with the new schema
@@ -45,6 +45,28 @@ def create_app():
         except Exception as e:
             logger.error(f"Error creating database tables: {str(e)}")
             raise
+
+        # Initialize default battery types
+        try:
+            default_batteries = [
+                {'name': 'Phone Charge in the Station', 'type': 'charging', 'capacity': None},
+                {'name': '250 Wh Anker Battery', 'type': 'battery', 'capacity': '250 Wh', 'quantity': 0},
+                {'name': 'Large 2.4kWh Battery', 'type': 'battery', 'capacity': '2.4 kWh', 'quantity': 0},
+                {'name': 'Phone Bank', 'type': 'charging', 'capacity': None}
+            ]
+
+            for battery_data in default_batteries:
+                battery = Battery.query.filter_by(name=battery_data['name']).first()
+                if not battery:
+                    battery = Battery(**battery_data)
+                    db.session.add(battery)
+
+            db.session.commit()
+            logger.info("Default batteries initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing default batteries: {str(e)}")
+            db.session.rollback()
+
 
         # Import routes after models are initialized
         from app.routes import bp
