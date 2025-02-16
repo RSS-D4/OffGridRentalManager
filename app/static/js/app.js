@@ -458,16 +458,16 @@ function newRental() {
             });
         });
 
-    // Load batteries
-    fetch('/api/batteries')
+    // Load batteries using battery-types endpoint
+    fetch('/api/battery-types')
         .then(response => response.json())
-        .then(batteries => {
+        .then(batteryTypes => {
             const select = document.getElementById('battery');
-            batteries.forEach(battery => {
-                if (battery.type === 'charging' || battery.quantity > 0) {
+            batteryTypes.forEach(type => {
+                if (type.type === 'charging' || type.available_units > 0) {
                     const option = document.createElement('option');
-                    option.value = battery.id;
-                    option.textContent = `${battery.name}${battery.type === 'battery' ? ` (${battery.quantity} available)` : ''}`;
+                    option.value = type.id;
+                    option.textContent = `${type.name}${type.type === 'battery' ? ` (${type.available_units} available)` : ''}`;
                     select.appendChild(option);
                 }
             });
@@ -515,7 +515,7 @@ function manageBatteries() {
             <table>
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th>Brand</th>
                         <th>Type</th>
                         <th>Capacity</th>
                         <th>Unit Number</th>
@@ -621,7 +621,7 @@ function addBattery() {
         <h2>Add New Battery/Service</h2>
         <form id="addBatteryForm">
             <div class="form-group">
-                <label for="name">Name:</label>
+                <label for="name">Brand:</label>
                 <input type="text" id="name" name="name" required>
             </div>
             <div class="form-group">
@@ -636,7 +636,7 @@ function addBattery() {
                 <input type="text" id="capacity" name="capacity">
             </div>
             <div class="form-group" id="quantityGroup">
-                <label for="quantity">Quantity:</label>
+                <label for="quantity">Number of Units:</label>
                 <input type="number" id="quantity" name="quantity" min="0" value="0">
             </div>
             <button type="submit">Add Battery/Service</button>
@@ -665,7 +665,7 @@ function addBattery() {
         };
 
         try {
-            const response = await fetch('/api/batteries', {
+            const response = await fetch('/api/battery-types', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
