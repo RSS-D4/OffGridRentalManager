@@ -149,12 +149,13 @@ def update_customer(customer_id):
     logger.info(f"Received PUT request for customer_id: {customer_id}")
     try:
         customer = Customer.query.get_or_404(customer_id)
-        data = request.json
+        data = request.form.to_dict()
         logger.debug(f"Updating customer {customer_id} with data: {data}")
 
         if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
             raise KeyError('Missing required fields')
 
+        # Update customer information
         customer.first_name = data['first_name']
         customer.middle_name = data.get('middle_name')
         customer.family_name = data['family_name']
@@ -165,6 +166,22 @@ def update_customer(customer_id):
         customer.city_of_birth = data.get('city_of_birth')
         customer.id_type = data.get('id_type')
         customer.id_number = data.get('id_number')
+
+        # Handle photo updates
+        if 'selfie_photo' in request.files:
+            file = request.files['selfie_photo']
+            if file and file.filename:
+                customer.selfie_photo = file.read()
+
+        if 'id_photo' in request.files:
+            file = request.files['id_photo']
+            if file and file.filename:
+                customer.id_photo = file.read()
+
+        if 'bill_photo' in request.files:
+            file = request.files['bill_photo']
+            if file and file.filename:
+                customer.bill_photo = file.read()
 
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")

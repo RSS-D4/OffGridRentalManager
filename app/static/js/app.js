@@ -227,7 +227,7 @@ async function editCustomer(customerId) {
         const app = document.getElementById('app');
         app.innerHTML = `
             <h2>Edit Customer</h2>
-            <form id="editCustomerForm">
+            <form id="editCustomerForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="first_name">First Name:</label>
                     <input type="text" id="first_name" name="first_name" value="${customer.first_name}" required>
@@ -272,24 +272,55 @@ async function editCustomer(customerId) {
                     <label for="id_number">ID Number:</label>
                     <input type="text" id="id_number" name="id_number" value="${customer.id_number}" required>
                 </div>
+
+                <!-- Photo Upload Fields -->
+                <div class="form-group">
+                    <label for="selfie_photo">Update Selfie Photo:</label>
+                    <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
+                    <div id="selfie_preview" class="photo-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="id_photo">Update ID Photo:</label>
+                    <input type="file" id="id_photo" name="id_photo" accept="image/*">
+                    <div id="id_preview" class="photo-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="bill_photo">Update Bill Photo:</label>
+                    <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
+                    <div id="bill_preview" class="photo-preview"></div>
+                </div>
+
                 <button type="submit">Update Customer</button>
                 <button type="button" onclick="loadCustomers()">Cancel</button>
             </form>
         `;
 
+        // Add photo preview functionality
+        ['selfie_photo', 'id_photo', 'bill_photo'].forEach(id => {
+            const input = document.getElementById(id);
+            const preview = document.getElementById(id + '_preview');
+            if (input && preview) {
+                input.addEventListener('change', function(e) {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                        };
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+        });
+
         const form = document.getElementById('editCustomerForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
-            const customerData = Object.fromEntries(formData.entries());
 
             try {
                 const response = await fetch(`/api/customers/${customerId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(customerData),
+                    body: formData
                 });
 
                 if (response.ok) {
