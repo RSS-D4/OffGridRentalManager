@@ -209,8 +209,31 @@ function viewCustomerDetails(customerId) {
                     <p><strong>City of Birth:</strong> ${customer.city_of_birth}</p>
                     <p><strong>ID Type:</strong> ${customer.id_type}</p>
                     <p><strong>ID Number:</strong> ${customer.id_number}</p>
+
+                    <div class="photos-section">
+                        <h3>Photos</h3>
+                        ${customer.has_selfie ? `
+                            <div class="photo-container">
+                                <h4>Selfie Photo</h4>
+                                <img src="/api/customers/${customer.id}/photos/selfie" alt="Selfie Photo" class="customer-photo">
+                            </div>
+                        ` : ''}
+                        ${customer.has_id_photo ? `
+                            <div class="photo-container">
+                                <h4>ID Photo</h4>
+                                <img src="/api/customers/${customer.id}/photos/id" alt="ID Photo" class="customer-photo">
+                            </div>
+                        ` : ''}
+                        ${customer.has_bill_photo ? `
+                            <div class="photo-container">
+                                <h4>Bill Photo</h4>
+                                <img src="/api/customers/${customer.id}/photos/bill" alt="Bill Photo" class="customer-photo">
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
                 <button onclick="loadCustomers()">Back to Customers</button>
+                <button onclick="editCustomer(${customer.id})">Edit Customer</button>
             `;
         })
         .catch(error => {

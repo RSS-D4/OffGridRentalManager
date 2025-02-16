@@ -128,3 +128,30 @@ th {
     max-height: 100%;
     object-fit: contain;
 }
+
+/* Add styles for customer photos */
+.photos-section {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.photo-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.photo-container h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.customer-photo {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}

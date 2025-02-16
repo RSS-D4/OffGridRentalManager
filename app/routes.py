@@ -1,9 +1,10 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 from app import db
 from app.models import Customer, BatteryRental, WaterSale, InternetAccess
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
+import io
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -41,10 +42,26 @@ def get_dashboard_stats():
         logger.error(f"Error getting dashboard stats: {str(e)}")
         return jsonify({'error': 'Failed to load dashboard statistics'}), 500
 
+@bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
+def get_customer_photo(customer_id, photo_type):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        if photo_type == 'selfie' and customer.selfie_photo:
+            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg')
+        elif photo_type == 'id' and customer.id_photo:
+            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg')
+        elif photo_type == 'bill' and customer.bill_photo:
+            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg')
+        return jsonify({'error': 'Photo not found'}), 404
+    except Exception as e:
+        logger.error(f"Error getting customer photo: {str(e)}")
+        return jsonify({'error': 'Failed to load photo'}), 500
+
 @bp.route('/api/customers', methods=['GET'])
 def list_customers():
     try:
         customers = Customer.query.all()
+        logger.debug(f"Returning customer list: {customers}")
         customer_list = [{
             'id': customer.id,
             'first_name': customer.first_name,
@@ -56,9 +73,11 @@ def list_customers():
             'date_of_birth': customer.date_of_birth,
             'city_of_birth': customer.city_of_birth,
             'id_type': customer.id_type,
-            'id_number': customer.id_number
+            'id_number': customer.id_number,
+            'has_selfie': bool(customer.selfie_photo),
+            'has_id_photo': bool(customer.id_photo),
+            'has_bill_photo': bool(customer.bill_photo)
         } for customer in customers]
-        logger.debug(f"Returning customer list: {customer_list}")
         return jsonify(customer_list)
     except Exception as e:
         logger.error(f"Error listing customers: {str(e)}")
@@ -79,7 +98,10 @@ def get_customer(customer_id):
             'date_of_birth': customer.date_of_birth,
             'city_of_birth': customer.city_of_birth,
             'id_type': customer.id_type,
-            'id_number': customer.id_number
+            'id_number': customer.id_number,
+            'has_selfie': bool(customer.selfie_photo),
+            'has_id_photo': bool(customer.id_photo),
+            'has_bill_photo': bool(customer.bill_photo)
         })
     except Exception as e:
         logger.error(f"Error getting customer {customer_id}: {str(e)}")
@@ -107,7 +129,7 @@ def create_customer():
             id_number=data['id_number']
         )
 
-        # Handle optional photo uploads
+        # Handle photo uploads
         if 'selfie_photo' in request.files:
             file = request.files['selfie_photo']
             if file and file.filename:
@@ -160,20 +182,11 @@ def update_customer(customer_id):
         logger.debug(f"Updating customer {customer_id} with data: {data}")
         logger.debug(f"Files received in update: {list(request.files.keys())}")
 
-        if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
-            raise KeyError('Missing required fields')
-
         # Update customer information
-        customer.first_name = data['first_name']
-        customer.middle_name = data.get('middle_name')
-        customer.family_name = data['family_name']
-        customer.phone = data['phone']
-        customer.address = data.get('address')
-        customer.city = data.get('city')
-        customer.date_of_birth = data.get('date_of_birth')
-        customer.city_of_birth = data.get('city_of_birth')
-        customer.id_type = data.get('id_type')
-        customer.id_number = data.get('id_number')
+        for field in ['first_name', 'middle_name', 'family_name', 'phone', 'address', 
+                     'city', 'date_of_birth', 'city_of_birth', 'id_type', 'id_number']:
+            if field in data:
+                setattr(customer, field, data[field])
 
         # Handle photo updates
         if 'selfie_photo' in request.files:
@@ -200,17 +213,9 @@ def update_customer(customer_id):
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")
         return jsonify({'message': 'Customer updated successfully'})
-    except IntegrityError as e:
-        db.session.rollback()
-        logger.error(f"IntegrityError while updating customer {customer_id}: {str(e)}")
-        return jsonify({'error': 'Phone number already exists'}), 400
-    except KeyError as e:
-        db.session.rollback()
-        logger.error(f"KeyError while updating customer {customer_id}: {str(e)}")
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Unexpected error while updating customer {customer_id}: {str(e)}")
+        logger.error(f"Error updating customer {customer_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 # Battery Rental endpoints
