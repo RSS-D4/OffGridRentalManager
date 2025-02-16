@@ -91,6 +91,7 @@ def create_customer():
     try:
         data = request.form.to_dict()
         logger.debug(f"Received form data: {data}")
+        logger.debug(f"Files received: {list(request.files.keys())}")
 
         # Create new customer instance
         customer = Customer(
@@ -110,17 +111,23 @@ def create_customer():
         if 'selfie_photo' in request.files:
             file = request.files['selfie_photo']
             if file and file.filename:
+                logger.debug(f"Processing selfie photo: {file.filename}")
                 customer.selfie_photo = file.read()
+                logger.debug("Selfie photo processed successfully")
 
         if 'id_photo' in request.files:
             file = request.files['id_photo']
             if file and file.filename:
+                logger.debug(f"Processing ID photo: {file.filename}")
                 customer.id_photo = file.read()
+                logger.debug("ID photo processed successfully")
 
         if 'bill_photo' in request.files:
             file = request.files['bill_photo']
             if file and file.filename:
+                logger.debug(f"Processing bill photo: {file.filename}")
                 customer.bill_photo = file.read()
+                logger.debug("Bill photo processed successfully")
 
         db.session.add(customer)
         db.session.commit()
@@ -151,6 +158,7 @@ def update_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         data = request.form.to_dict()
         logger.debug(f"Updating customer {customer_id} with data: {data}")
+        logger.debug(f"Files received in update: {list(request.files.keys())}")
 
         if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
             raise KeyError('Missing required fields')
@@ -171,17 +179,23 @@ def update_customer(customer_id):
         if 'selfie_photo' in request.files:
             file = request.files['selfie_photo']
             if file and file.filename:
+                logger.debug(f"Processing updated selfie photo: {file.filename}")
                 customer.selfie_photo = file.read()
+                logger.debug("Updated selfie photo processed successfully")
 
         if 'id_photo' in request.files:
             file = request.files['id_photo']
             if file and file.filename:
+                logger.debug(f"Processing updated ID photo: {file.filename}")
                 customer.id_photo = file.read()
+                logger.debug("Updated ID photo processed successfully")
 
         if 'bill_photo' in request.files:
             file = request.files['bill_photo']
             if file and file.filename:
+                logger.debug(f"Processing updated bill photo: {file.filename}")
                 customer.bill_photo = file.read()
+                logger.debug("Updated bill photo processed successfully")
 
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")
@@ -198,3 +212,52 @@ def update_customer(customer_id):
         db.session.rollback()
         logger.error(f"Unexpected error while updating customer {customer_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+# Battery Rental endpoints
+@bp.route('/api/rentals', methods=['GET'])
+def get_rentals():
+    try:
+        rentals = BatteryRental.query.all()
+        rental_list = [{
+            'id': rental.id,
+            'customer_name': f"{rental.customer.first_name} {rental.customer.family_name}",
+            'battery_type': rental.battery_type,
+            'rented_at': rental.rented_at.isoformat(),
+            'returned_at': rental.returned_at.isoformat() if rental.returned_at else None
+        } for rental in rentals]
+        return jsonify(rental_list)
+    except Exception as e:
+        logger.error(f"Error getting rentals: {str(e)}")
+        return jsonify({'error': 'Failed to load rentals'}), 500
+
+# Water Sales endpoints
+@bp.route('/api/water-sales', methods=['GET'])
+def get_water_sales():
+    try:
+        sales = WaterSale.query.all()
+        sales_list = [{
+            'id': sale.id,
+            'customer_name': f"{sale.customer.first_name} {sale.customer.family_name}",
+            'size': sale.size,
+            'sold_at': sale.sold_at.isoformat()
+        } for sale in sales]
+        return jsonify(sales_list)
+    except Exception as e:
+        logger.error(f"Error getting water sales: {str(e)}")
+        return jsonify({'error': 'Failed to load water sales'}), 500
+
+# Internet Access endpoints
+@bp.route('/api/internet-access', methods=['GET'])
+def get_internet_access():
+    try:
+        records = InternetAccess.query.all()
+        access_list = [{
+            'id': record.id,
+            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'purchased_at': record.purchased_at.isoformat(),
+            'status': 'Active'  # You might want to add a status field to your model
+        } for record in records]
+        return jsonify(access_list)
+    except Exception as e:
+        logger.error(f"Error getting internet access records: {str(e)}")
+        return jsonify({'error': 'Failed to load internet access records'}), 500

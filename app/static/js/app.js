@@ -341,6 +341,168 @@ async function editCustomer(customerId) {
     }
 }
 
+function loadBatteryRentals() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Battery Rentals</h2>
+        <button onclick="newRental()" class="add-button">New Rental</button>
+        <div id="rentalsList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Battery Type</th>
+                        <th>Rented At</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="rentalsTableBody">
+                    <tr><td colspan="5">Loading rentals...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Load rentals data
+    fetch('/api/rentals')
+        .then(response => response.json())
+        .then(rentals => {
+            const tbody = document.getElementById('rentalsTableBody');
+            if (tbody) {
+                if (rentals.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No rentals found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rentals.map(rental => `
+                    <tr>
+                        <td>${rental.customer_name}</td>
+                        <td>${rental.battery_type}</td>
+                        <td>${new Date(rental.rented_at).toLocaleString()}</td>
+                        <td>${rental.returned_at ? 'Returned' : 'Active'}</td>
+                        <td>
+                            <button onclick="viewRental(${rental.id})">View</button>
+                            ${!rental.returned_at ? `<button onclick="returnRental(${rental.id})">Return</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading rentals:', error);
+            const tbody = document.getElementById('rentalsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5">Error loading rentals</td></tr>';
+            }
+        });
+}
+
+function loadWaterSales() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Water Sales</h2>
+        <button onclick="newWaterSale()" class="add-button">New Sale</button>
+        <div id="waterSalesList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Size (L)</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="waterSalesTableBody">
+                    <tr><td colspan="4">Loading water sales...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Load water sales data
+    fetch('/api/water-sales')
+        .then(response => response.json())
+        .then(sales => {
+            const tbody = document.getElementById('waterSalesTableBody');
+            if (tbody) {
+                if (sales.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No water sales found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = sales.map(sale => `
+                    <tr>
+                        <td>${sale.customer_name}</td>
+                        <td>${sale.size}</td>
+                        <td>${new Date(sale.sold_at).toLocaleString()}</td>
+                        <td>
+                            <button onclick="viewWaterSale(${sale.id})">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading water sales:', error);
+            const tbody = document.getElementById('waterSalesTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4">Error loading water sales</td></tr>';
+            }
+        });
+}
+
+function loadInternetAccess() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Internet Access</h2>
+        <button onclick="newInternetAccess()" class="add-button">New Access</button>
+        <div id="internetAccessList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Purchase Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="internetAccessTableBody">
+                    <tr><td colspan="4">Loading internet access records...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Load internet access data
+    fetch('/api/internet-access')
+        .then(response => response.json())
+        .then(records => {
+            const tbody = document.getElementById('internetAccessTableBody');
+            if (tbody) {
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No internet access records found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = records.map(record => `
+                    <tr>
+                        <td>${record.customer_name}</td>
+                        <td>${new Date(record.purchased_at).toLocaleString()}</td>
+                        <td>${record.status}</td>
+                        <td>
+                            <button onclick="viewInternetAccess(${record.id})">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading internet access records:', error);
+            const tbody = document.getElementById('internetAccessTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="4">Error loading internet access records</td></tr>';
+            }
+        });
+}
+
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', () => {
     // Set up navigation
