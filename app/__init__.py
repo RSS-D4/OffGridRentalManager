@@ -38,7 +38,8 @@ def create_app():
         from app.models import Customer, BatteryRental, WaterSale, InternetAccess
 
         try:
-            # Create tables if they don't exist
+            # Drop all tables and recreate them with the new schema
+            db.drop_all()
             db.create_all()
             logger.info("Database tables created successfully")
         except Exception as e:

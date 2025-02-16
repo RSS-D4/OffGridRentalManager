@@ -113,7 +113,13 @@ def create_customer():
     try:
         data = request.form.to_dict()
         logger.debug(f"Received form data: {data}")
-        logger.debug(f"Files received: {list(request.files.keys())}")
+
+        # Convert date string to Date object
+        try:
+            date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
+        except ValueError as e:
+            logger.error(f"Invalid date format: {e}")
+            return jsonify({'error': 'Invalid date format. Please use YYYY-MM-DD'}), 400
 
         # Create new customer instance
         customer = Customer(
@@ -123,33 +129,42 @@ def create_customer():
             phone=data['phone'],
             address=data.get('address'),
             city=data.get('city'),
-            date_of_birth=data['date_of_birth'],
+            date_of_birth=date_of_birth,
             city_of_birth=data['city_of_birth'],
             id_type=data['id_type'],
             id_number=data['id_number']
         )
 
-        # Handle photo uploads
+        # Handle photo uploads with proper error handling
         if 'selfie_photo' in request.files:
             file = request.files['selfie_photo']
             if file and file.filename:
-                logger.debug(f"Processing selfie photo: {file.filename}")
-                customer.selfie_photo = file.read()
-                logger.debug("Selfie photo processed successfully")
+                try:
+                    customer.selfie_photo = file.read()
+                    logger.debug("Selfie photo processed successfully")
+                except Exception as e:
+                    logger.error(f"Error processing selfie photo: {str(e)}")
+                    return jsonify({'error': 'Error processing selfie photo'}), 400
 
         if 'id_photo' in request.files:
             file = request.files['id_photo']
             if file and file.filename:
-                logger.debug(f"Processing ID photo: {file.filename}")
-                customer.id_photo = file.read()
-                logger.debug("ID photo processed successfully")
+                try:
+                    customer.id_photo = file.read()
+                    logger.debug("ID photo processed successfully")
+                except Exception as e:
+                    logger.error(f"Error processing ID photo: {str(e)}")
+                    return jsonify({'error': 'Error processing ID photo'}), 400
 
         if 'bill_photo' in request.files:
             file = request.files['bill_photo']
             if file and file.filename:
-                logger.debug(f"Processing bill photo: {file.filename}")
-                customer.bill_photo = file.read()
-                logger.debug("Bill photo processed successfully")
+                try:
+                    customer.bill_photo = file.read()
+                    logger.debug("Bill photo processed successfully")
+                except Exception as e:
+                    logger.error(f"Error processing bill photo: {str(e)}")
+                    return jsonify({'error': 'Error processing bill photo'}), 400
 
         db.session.add(customer)
         db.session.commit()
@@ -171,7 +186,7 @@ def create_customer():
     except Exception as e:
         db.session.rollback()
         logger.error(f"Unexpected error while creating customer: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
 def update_customer(customer_id):

@@ -9,13 +9,13 @@ class Customer(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     address = db.Column(db.String(200), nullable=True)
     city = db.Column(db.String(100), nullable=True)
-    date_of_birth = db.Column(db.String(10), nullable=False)
+    date_of_birth = db.Column(db.Date, nullable=False)  # Changed to Date type
     city_of_birth = db.Column(db.String(100), nullable=False)
     id_type = db.Column(db.String(50), nullable=False)
     id_number = db.Column(db.String(50), nullable=False)
-    selfie_photo = db.Column(db.LargeBinary(length=(2**32)-1), nullable=True)
-    id_photo = db.Column(db.LargeBinary(length=(2**32)-1), nullable=True)
-    bill_photo = db.Column(db.LargeBinary(length=(2**32)-1), nullable=True)
+    selfie_photo = db.Column(db.LargeBinary, nullable=True)  # Simplified LargeBinary
+    id_photo = db.Column(db.LargeBinary, nullable=True)
+    bill_photo = db.Column(db.LargeBinary, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
