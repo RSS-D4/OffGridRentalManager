@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 from app import db
-from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery # Added Battery model import
+from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery, BatteryType
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
@@ -12,59 +12,83 @@ logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
 
-@bp.route('/api/batteries', methods=['GET'])
-def list_batteries():
+@bp.route('/api/battery-types', methods=['GET'])
+def list_battery_types():
     try:
-        batteries = Battery.query.all()
+        battery_types = BatteryType.query.all()
+        return jsonify([{
+            'id': bt.id,
+            'name': bt.name,
+            'type': bt.type,
+            'capacity': bt.capacity,
+            'available_units': len([b for b in bt.batteries if b.status == 'available'])
+        } for bt in battery_types])
+    except Exception as e:
+        logger.error(f"Error listing battery types: {str(e)}")
+        return jsonify({'error': 'Failed to load battery types'}), 500
+
+@bp.route('/api/battery-types', methods=['POST'])
+def create_battery_type():
+    try:
+        data = request.get_json()
+        battery_type = BatteryType(
+            name=data['name'],
+            type=data['type'],
+            capacity=data.get('capacity')
+        )
+        db.session.add(battery_type)
+        db.session.commit()
+
+        # If it's a battery type, create the specified number of battery units
+        if data['type'] == 'battery' and data.get('quantity', 0) > 0:
+            for i in range(data['quantity']):
+                battery = Battery(
+                    battery_type_id=battery_type.id,
+                    unit_number=i + 1,
+                    status='available'
+                )
+                db.session.add(battery)
+            db.session.commit()
+
+        return jsonify({
+            'message': 'Battery type created successfully',
+            'battery_type_id': battery_type.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating battery type: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/batteries', methods=['GET'])
+def list_available_batteries():
+    try:
+        batteries = Battery.query.filter_by(status='available').all()
         return jsonify([{
             'id': b.id,
-            'name': b.name,
-            'type': b.type,
-            'capacity': b.capacity,
-            'quantity': b.quantity
+            'type_name': b.battery_type.name,
+            'unit_number': b.unit_number,
+            'capacity': b.battery_type.capacity,
+            'type': b.battery_type.type
         } for b in batteries])
     except Exception as e:
         logger.error(f"Error listing batteries: {str(e)}")
         return jsonify({'error': 'Failed to load batteries'}), 500
 
-@bp.route('/api/batteries', methods=['POST'])
-def create_battery():
+@bp.route('/api/rentals', methods=['GET'])
+def get_rentals():
     try:
-        data = request.get_json()
-        battery = Battery(
-            name=data['name'],
-            type=data['type'],
-            capacity=data.get('capacity'),
-            quantity=data.get('quantity', 0) if data['type'] == 'battery' else 0
-        )
-        db.session.add(battery)
-        db.session.commit()
-        return jsonify({
-            'message': 'Battery created successfully',
-            'battery_id': battery.id
-        }), 201
+        rentals = BatteryRental.query.all()
+        rental_list = [{
+            'id': rental.id,
+            'customer_name': f"{rental.customer.first_name} {rental.customer.family_name}",
+            'battery_name': f"{rental.battery.battery_type.name} (Unit #{rental.battery.unit_number})",
+            'rented_at': rental.rented_at.isoformat(),
+            'returned_at': rental.returned_at.isoformat() if rental.returned_at else None
+        } for rental in rentals]
+        return jsonify(rental_list)
     except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error creating battery: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/api/batteries/<int:battery_id>', methods=['PUT'])
-def update_battery(battery_id):
-    try:
-        battery = Battery.query.get_or_404(battery_id)
-        data = request.get_json()
-
-        if 'name' in data:
-            battery.name = data['name']
-        if 'quantity' in data and battery.type == 'battery':
-            battery.quantity = data['quantity']
-
-        db.session.commit()
-        return jsonify({'message': 'Battery updated successfully'})
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating battery: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error getting rentals: {str(e)}")
+        return jsonify({'error': 'Failed to load rentals'}), 500
 
 @bp.route('/api/rentals', methods=['POST'])
 def create_rental():
@@ -73,17 +97,15 @@ def create_rental():
         customer = Customer.query.get_or_404(data['customer_id'])
         battery = Battery.query.get_or_404(data['battery_id'])
 
-        # For battery types, check quantity
-        if battery.type == 'battery' and battery.quantity <= 0:
-            return jsonify({'error': 'No batteries available for rent'}), 400
+        if battery.status != 'available':
+            return jsonify({'error': 'Battery is not available for rent'}), 400
 
         rental = BatteryRental(
             customer_id=customer.id,
             battery_id=battery.id
         )
 
-        if battery.type == 'battery':
-            battery.quantity -= 1
+        battery.status = 'rented'
 
         db.session.add(rental)
         db.session.commit()
@@ -105,10 +127,7 @@ def return_rental(rental_id):
             return jsonify({'error': 'Rental already returned'}), 400
 
         rental.returned_at = datetime.utcnow()
-
-        # Increment battery quantity if it's a battery type
-        if rental.battery.type == 'battery':
-            rental.battery.quantity += 1
+        rental.battery.status = 'available'
 
         db.session.commit()
         return jsonify({'message': 'Rental returned successfully'})
@@ -337,23 +356,6 @@ def update_customer(customer_id):
         db.session.rollback()
         logger.error(f"Error updating customer {customer_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-# Battery Rental endpoints
-@bp.route('/api/rentals', methods=['GET'])
-def get_rentals():
-    try:
-        rentals = BatteryRental.query.all()
-        rental_list = [{
-            'id': rental.id,
-            'customer_name': f"{rental.customer.first_name} {rental.customer.family_name}",
-            'battery_type': rental.battery_type,
-            'rented_at': rental.rented_at.isoformat(),
-            'returned_at': rental.returned_at.isoformat() if rental.returned_at else None
-        } for rental in rentals]
-        return jsonify(rental_list)
-    except Exception as e:
-        logger.error(f"Error getting rentals: {str(e)}")
-        return jsonify({'error': 'Failed to load rentals'}), 500
 
 # Water Sales endpoints
 @bp.route('/api/water-sales', methods=['GET'])

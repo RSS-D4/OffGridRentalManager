@@ -19,12 +19,20 @@ class Customer(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class Battery(db.Model):
+class BatteryType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(50), nullable=False)  # 'battery' or 'charging'
     capacity = db.Column(db.String(50), nullable=True)  # Can be null for phone charging options
-    quantity = db.Column(db.Integer, default=0)  # Only used for battery types
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    batteries = db.relationship("Battery", backref="battery_type", lazy=True)
+
+class Battery(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    battery_type_id = db.Column(db.Integer, db.ForeignKey('battery_type.id'), nullable=False)
+    unit_number = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), default='available')  # available, rented, maintenance
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

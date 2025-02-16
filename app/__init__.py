@@ -35,7 +35,7 @@ def create_app():
 
     with app.app_context():
         # Import models here to avoid circular imports
-        from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery
+        from app.models import Customer, BatteryRental, WaterSale, InternetAccess, BatteryType, Battery
 
         try:
             # Drop all tables and recreate them with the new schema
@@ -48,25 +48,54 @@ def create_app():
 
         # Initialize default battery types
         try:
-            default_batteries = [
-                {'name': 'Phone Charge in the Station', 'type': 'charging', 'capacity': None},
-                {'name': '250 Wh Anker Battery', 'type': 'battery', 'capacity': '250 Wh', 'quantity': 0},
-                {'name': 'Large 2.4kWh Battery', 'type': 'battery', 'capacity': '2.4 kWh', 'quantity': 0},
-                {'name': 'Phone Bank', 'type': 'charging', 'capacity': None}
+            default_battery_types = [
+                {
+                    'name': 'Phone Charge in the Station',
+                    'type': 'charging',
+                    'capacity': None,
+                    'units': 0
+                },
+                {
+                    'name': '250 Wh Anker Battery',
+                    'type': 'battery',
+                    'capacity': '250 Wh',
+                    'units': 5
+                },
+                {
+                    'name': 'Large 2.4kWh Battery',
+                    'type': 'battery',
+                    'capacity': '2.4 kWh',
+                    'units': 3
+                },
+                {
+                    'name': 'Phone Bank',
+                    'type': 'charging',
+                    'capacity': None,
+                    'units': 0
+                }
             ]
 
-            for battery_data in default_batteries:
-                battery = Battery.query.filter_by(name=battery_data['name']).first()
-                if not battery:
-                    battery = Battery(**battery_data)
-                    db.session.add(battery)
+            for battery_type_data in default_battery_types:
+                units = battery_type_data.pop('units')
+                battery_type = BatteryType(**battery_type_data)
+                db.session.add(battery_type)
+                db.session.flush()  # Get the ID of the battery type
+
+                # Create battery units if it's a physical battery
+                if battery_type.type == 'battery':
+                    for i in range(units):
+                        battery = Battery(
+                            battery_type_id=battery_type.id,
+                            unit_number=i + 1,
+                            status='available'
+                        )
+                        db.session.add(battery)
 
             db.session.commit()
-            logger.info("Default batteries initialized successfully")
+            logger.info("Default battery types and units initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing default batteries: {str(e)}")
+            logger.error(f"Error initializing default battery types: {str(e)}")
             db.session.rollback()
-
 
         # Import routes after models are initialized
         from app.routes import bp
