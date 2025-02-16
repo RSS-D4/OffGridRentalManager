@@ -62,17 +62,57 @@ def create_battery_type():
 @bp.route('/api/batteries', methods=['GET'])
 def list_available_batteries():
     try:
-        batteries = Battery.query.filter_by(status='available').all()
+        batteries = Battery.query.all()  # Changed to get all batteries
         return jsonify([{
             'id': b.id,
             'type_name': b.battery_type.name,
             'unit_number': b.unit_number,
             'capacity': b.battery_type.capacity,
-            'type': b.battery_type.type
+            'type': b.battery_type.type,
+            'status': b.status
         } for b in batteries])
     except Exception as e:
         logger.error(f"Error listing batteries: {str(e)}")
         return jsonify({'error': 'Failed to load batteries'}), 500
+
+@bp.route('/api/batteries/<int:battery_id>', methods=['PUT'])
+def update_battery(battery_id):
+    try:
+        battery = Battery.query.get_or_404(battery_id)
+        data = request.get_json()
+
+        if 'status' in data:
+            if battery.status == 'rented':
+                return jsonify({'error': 'Cannot update status of rented battery'}), 400
+            battery.status = data['status']
+
+        db.session.commit()
+        return jsonify({'message': 'Battery updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating battery: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/batteries/<int:battery_id>', methods=['DELETE'])
+def delete_battery(battery_id):
+    try:
+        battery = Battery.query.get_or_404(battery_id)
+
+        # Check if battery is currently rented
+        if battery.status == 'rented':
+            return jsonify({'error': 'Cannot delete a rented battery'}), 400
+
+        # Check if battery has rental history
+        if BatteryRental.query.filter_by(battery_id=battery_id).first():
+            return jsonify({'error': 'Cannot delete battery with rental history'}), 400
+
+        db.session.delete(battery)
+        db.session.commit()
+        return jsonify({'message': 'Battery deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting battery: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/rentals', methods=['GET'])
 def get_rentals():

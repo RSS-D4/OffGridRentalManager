@@ -518,12 +518,13 @@ function manageBatteries() {
                         <th>Name</th>
                         <th>Type</th>
                         <th>Capacity</th>
-                        <th>Quantity</th>
+                        <th>Unit Number</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="batteriesTableBody">
-                    <tr><td colspan="5">Loading batteries...</td></tr>
+                    <tr><td colspan="6">Loading batteries...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -539,24 +540,79 @@ function loadBatteries() {
             const tbody = document.getElementById('batteriesTableBody');
             if (tbody) {
                 if (batteries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5">No batteries found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6">No batteries found</td></tr>';
                     return;
                 }
                 tbody.innerHTML = batteries.map(battery => `
                     <tr>
-                        <td>${battery.name}</td>
+                        <td>${battery.type_name}</td>
                         <td>${battery.type}</td>
                         <td>${battery.capacity || 'N/A'}</td>
-                        <td>${battery.type === 'battery' ? battery.quantity : 'N/A'}</td>
+                        <td>${battery.unit_number}</td>
+                        <td>${battery.status}</td>
                         <td>
-                            ${battery.type === 'battery' ? `
-                                <button onclick="updateBatteryQuantity(${battery.id}, ${battery.quantity})">Update Quantity</button>
-                            ` : ''}
+                            <button onclick="updateBatteryStatus(${battery.id}, '${battery.status}')">Update Status</button>
+                            <button onclick="deleteBattery(${battery.id})" class="delete-button">Delete</button>
                         </td>
                     </tr>
                 `).join('');
             }
         });
+}
+
+function updateBatteryStatus(batteryId, currentStatus) {
+    const newStatus = prompt('Enter new status (available, maintenance):', currentStatus);
+    if (newStatus === null) return;
+
+    if (!['available', 'maintenance'].includes(newStatus)) {
+        alert('Invalid status. Please use "available" or "maintenance"');
+        return;
+    }
+
+    fetch(`/api/batteries/${batteryId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert(`Failed to update status: ${result.error}`);
+        } else {
+            loadBatteries();
+        }
+    })
+    .catch(error => {
+        console.error('Error updating battery status:', error);
+        alert('Failed to update status. Please try again.');
+    });
+}
+
+function deleteBattery(batteryId) {
+    if (!confirm('Are you sure you want to delete this battery? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch(`/api/batteries/${batteryId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert(`Failed to delete battery: ${result.error}`);
+        } else {
+            loadBatteries();
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting battery:', error);
+        alert('Failed to delete battery. Please try again.');
+    });
 }
 
 function addBattery() {
