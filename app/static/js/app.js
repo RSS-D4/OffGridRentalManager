@@ -193,6 +193,123 @@ function loadAddCustomerForm() {
     }
 }
 
+function viewCustomerDetails(customerId) {
+    fetch(`/api/customers/${customerId}`)
+        .then(response => response.json())
+        .then(customer => {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <h2>Customer Details</h2>
+                <div class="customer-details">
+                    <p><strong>Name:</strong> ${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</p>
+                    <p><strong>Phone:</strong> ${customer.phone}</p>
+                    <p><strong>Address:</strong> ${customer.address || 'N/A'}</p>
+                    <p><strong>City:</strong> ${customer.city || 'N/A'}</p>
+                    <p><strong>Date of Birth:</strong> ${customer.date_of_birth}</p>
+                    <p><strong>City of Birth:</strong> ${customer.city_of_birth}</p>
+                    <p><strong>ID Type:</strong> ${customer.id_type}</p>
+                    <p><strong>ID Number:</strong> ${customer.id_number}</p>
+                </div>
+                <button onclick="loadCustomers()">Back to Customers</button>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading customer details:', error);
+            alert('Failed to load customer details. Please try again.');
+        });
+}
+
+async function editCustomer(customerId) {
+    try {
+        const response = await fetch(`/api/customers/${customerId}`);
+        const customer = await response.json();
+
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <h2>Edit Customer</h2>
+            <form id="editCustomerForm">
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" value="${customer.first_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="middle_name">Middle Name:</label>
+                    <input type="text" id="middle_name" name="middle_name" value="${customer.middle_name || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="family_name">Family Name:</label>
+                    <input type="text" id="family_name" name="family_name" value="${customer.family_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone:</label>
+                    <input type="tel" id="phone" name="phone" value="${customer.phone}" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" id="address" name="address" value="${customer.address || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input type="text" id="city" name="city" value="${customer.city || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth">Date of Birth:</label>
+                    <input type="date" id="date_of_birth" name="date_of_birth" value="${customer.date_of_birth}" required>
+                </div>
+                <div class="form-group">
+                    <label for="city_of_birth">City of Birth:</label>
+                    <input type="text" id="city_of_birth" name="city_of_birth" value="${customer.city_of_birth}" required>
+                </div>
+                <div class="form-group">
+                    <label for="id_type">ID Type:</label>
+                    <select id="id_type" name="id_type" required>
+                        <option value="passport" ${customer.id_type === 'passport' ? 'selected' : ''}>Passport</option>
+                        <option value="national_id" ${customer.id_type === 'national_id' ? 'selected' : ''}>National ID</option>
+                        <option value="drivers_license" ${customer.id_type === 'drivers_license' ? 'selected' : ''}>Driver's License</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="id_number">ID Number:</label>
+                    <input type="text" id="id_number" name="id_number" value="${customer.id_number}" required>
+                </div>
+                <button type="submit">Update Customer</button>
+                <button type="button" onclick="loadCustomers()">Cancel</button>
+            </form>
+        `;
+
+        const form = document.getElementById('editCustomerForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const customerData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch(`/api/customers/${customerId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(customerData),
+                });
+
+                if (response.ok) {
+                    alert('Customer updated successfully!');
+                    loadCustomers();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to update customer: ${errorData.error}`);
+                }
+            } catch (error) {
+                console.error('Error updating customer:', error);
+                alert('Failed to update customer. Please try again.');
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching customer details:', error);
+        alert('Failed to load customer details. Please try again.');
+    }
+}
+
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', () => {
     // Set up navigation

@@ -143,3 +143,41 @@ def create_customer():
         db.session.rollback()
         logger.error(f"Unexpected error while creating customer: {str(e)}")
         return jsonify({'error': 'An unexpected error occurred'}), 500
+
+@bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
+def update_customer(customer_id):
+    logger.info(f"Received PUT request for customer_id: {customer_id}")
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        data = request.json
+        logger.debug(f"Updating customer {customer_id} with data: {data}")
+
+        if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
+            raise KeyError('Missing required fields')
+
+        customer.first_name = data['first_name']
+        customer.middle_name = data.get('middle_name')
+        customer.family_name = data['family_name']
+        customer.phone = data['phone']
+        customer.address = data.get('address')
+        customer.city = data.get('city')
+        customer.date_of_birth = data.get('date_of_birth')
+        customer.city_of_birth = data.get('city_of_birth')
+        customer.id_type = data.get('id_type')
+        customer.id_number = data.get('id_number')
+
+        db.session.commit()
+        logger.info(f"Customer {customer_id} updated successfully")
+        return jsonify({'message': 'Customer updated successfully'})
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"IntegrityError while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': 'Phone number already exists'}), 400
+    except KeyError as e:
+        db.session.rollback()
+        logger.error(f"KeyError while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Unexpected error while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
