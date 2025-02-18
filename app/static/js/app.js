@@ -435,9 +435,15 @@ function newRental() {
                 </select>
             </div>
             <div class="form-group">
-                <label for="battery">Select Battery/Service:</label>
-                <select id="battery" name="battery_id" required>
+                <label for="battery_type">Select Battery/Service:</label>
+                <select id="battery_type" name="battery_type_id" required>
                     <option value="">Select a battery or service</option>
+                </select>
+            </div>
+            <div class="form-group" id="batteryUnitGroup" style="display: none;">
+                <label for="battery">Select Battery Unit:</label>
+                <select id="battery" name="battery_id" required>
+                    <option value="">Select a battery unit</option>
                 </select>
             </div>
             <button type="submit">Create Rental</button>
@@ -458,11 +464,11 @@ function newRental() {
             });
         });
 
-    // Load batteries using battery-types endpoint
+    // Load battery types
     fetch('/api/battery-types')
         .then(response => response.json())
         .then(batteryTypes => {
-            const select = document.getElementById('battery');
+            const select = document.getElementById('battery_type');
             batteryTypes.forEach(type => {
                 if (type.type === 'charging' || type.available_units > 0) {
                     const option = document.createElement('option');
@@ -473,13 +479,55 @@ function newRental() {
             });
         });
 
+    // Handle battery type selection
+    const batteryTypeSelect = document.getElementById('battery_type');
+    const batteryUnitGroup = document.getElementById('batteryUnitGroup');
+    const batterySelect = document.getElementById('battery');
+
+    batteryTypeSelect.addEventListener('change', async () => {
+        const selectedTypeId = batteryTypeSelect.value;
+        if (!selectedTypeId) {
+            batteryUnitGroup.style.display = 'none';
+            return;
+        }
+
+        // Get the battery type details
+        const response = await fetch('/api/battery-types');
+        const types = await response.json();
+        const selectedType = types.find(t => t.id === parseInt(selectedTypeId));
+
+        if (selectedType && selectedType.type === 'battery') {
+            // Load available batteries for this type
+            const batteriesResponse = await fetch('/api/batteries');
+            const batteries = await batteriesResponse.json(); //Corrected this line
+            const availableBatteries = batteries.filter(b => 
+                b.type_id === parseInt(selectedTypeId) && b.status === 'available'
+            );
+
+            batterySelect.innerHTML = '<option value="">Select a battery unit</option>';
+            availableBatteries.forEach(battery => {
+                const option = document.createElement('option');
+                option.value = battery.id;
+                option.textContent = `Unit #${battery.unit_number}`;
+                batterySelect.appendChild(option);
+            });
+
+            batteryUnitGroup.style.display = 'block';
+            batterySelect.required = true;
+        } else {
+            batteryUnitGroup.style.display = 'none';
+            batterySelect.required = false;
+            batterySelect.value = '';
+        }
+    });
+
     // Handle form submission
     const form = document.getElementById('newRentalForm');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = {
             customer_id: parseInt(form.customer_id.value),
-            battery_id: parseInt(form.battery_id.value)
+            battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null
         };
 
         try {
@@ -842,8 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadCustomers();
                         break;
                     case 'rentals':
-                        loadBatteryRentals();
-                        break;
+                        loadBatteryRentals();                        break;
                     case 'water':
                         loadWaterSales();
                         break;

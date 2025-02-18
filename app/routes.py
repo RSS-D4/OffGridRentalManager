@@ -62,9 +62,10 @@ def create_battery_type():
 @bp.route('/api/batteries', methods=['GET'])
 def list_available_batteries():
     try:
-        batteries = Battery.query.all()  # Changed to get all batteries
+        batteries = Battery.query.all()
         return jsonify([{
             'id': b.id,
+            'type_id': b.battery_type_id,
             'type_name': b.battery_type.name,
             'unit_number': b.unit_number,
             'capacity': b.battery_type.capacity,
