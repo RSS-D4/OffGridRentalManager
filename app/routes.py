@@ -63,6 +63,7 @@ def create_battery_type():
 def list_available_batteries():
     try:
         batteries = Battery.query.all()
+        logger.debug(f"Found {len(batteries)} batteries")
         return jsonify([{
             'id': b.id,
             'type_id': b.battery_type_id,

@@ -499,7 +499,7 @@ function newRental() {
         if (selectedType && selectedType.type === 'battery') {
             // Load available batteries for this type
             const batteriesResponse = await fetch('/api/batteries');
-            const batteries = await batteriesResponse.json(); //Corrected this line
+            const batteries = await batteriesResponse.json();
             const availableBatteries = batteries.filter(b => 
                 b.type_id === parseInt(selectedTypeId) && b.status === 'available'
             );
@@ -890,7 +890,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadCustomers();
                         break;
                     case 'rentals':
-                        loadBatteryRentals();                        break;
+                        loadBatteryRentals();
+                        break;
                     case 'water':
                         loadWaterSales();
                         break;
