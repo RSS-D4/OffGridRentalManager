@@ -384,7 +384,7 @@ def get_customer_photo(customer_id, photo_type):
         return jsonify({'error': 'Failed to load photo'}), 500
 
 @bp.route('/api/customers/<int:customer_id>', methods=['GET'])
-def get_customer(customer_id):
+def get_customer_details(customer_id):
     try:
         customer = Customer.query.get_or_404(customer_id)
         return jsonify({
