@@ -423,7 +423,7 @@ function loadBatteryRentals() {
         });
 }
 
-function newRental() {
+async function newRental() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <h2>New Battery Rental</h2>
@@ -451,107 +451,120 @@ function newRental() {
         </form>
     `;
 
-    // Load customers
-    fetch('/api/customers')
-        .then(response => response.json())
-        .then(customers => {
-            const select = document.getElementById('customer');
-            customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
-                select.appendChild(option);
-            });
+    try {
+        // Load customers
+        const customersResponse = await fetch('/api/customers');
+        const customers = await customersResponse.json();
+        const customerSelect = document.getElementById('customer');
+        customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+            customerSelect.appendChild(option);
         });
 
-    // Load battery types
-    fetch('/api/battery-types')
-        .then(response => response.json())
-        .then(batteryTypes => {
-            const select = document.getElementById('battery_type');
-            batteryTypes.forEach(type => {
-                if (type.type === 'charging' || type.available_units > 0) {
-                    const option = document.createElement('option');
-                    option.value = type.id;
-                    option.textContent = `${type.name}${type.type === 'battery' ? ` (${type.available_units} available)` : ''}`;
-                    select.appendChild(option);
-                }
-            });
-        });
+        // Load battery types
+        const batteryTypesResponse = await fetch('/api/battery-types');
+        const batteryTypes = await batteryTypesResponse.json();
+        console.log('Available battery types:', batteryTypes);
 
-    // Handle battery type selection
-    const batteryTypeSelect = document.getElementById('battery_type');
-    const batteryUnitGroup = document.getElementById('batteryUnitGroup');
-    const batterySelect = document.getElementById('battery');
-
-    batteryTypeSelect.addEventListener('change', async () => {
-        const selectedTypeId = batteryTypeSelect.value;
-        if (!selectedTypeId) {
-            batteryUnitGroup.style.display = 'none';
-            return;
-        }
-
-        // Get the battery type details
-        const response = await fetch('/api/battery-types');
-        const types = await response.json();
-        const selectedType = types.find(t => t.id === parseInt(selectedTypeId));
-
-        if (selectedType && selectedType.type === 'battery') {
-            // Load available batteries for this type
-            const batteriesResponse = await fetch('/api/batteries');
-            const batteries = await batteriesResponse.json();
-            const availableBatteries = batteries.filter(b => 
-                b.type_id === parseInt(selectedTypeId) && b.status === 'available'
-            );
-
-            batterySelect.innerHTML = '<option value="">Select a battery unit</option>';
-            availableBatteries.forEach(battery => {
+        const batteryTypeSelect = document.getElementById('battery_type');
+        batteryTypes.forEach(type => {
+            if (type.type === 'charging' || type.available_units > 0) {
                 const option = document.createElement('option');
-                option.value = battery.id;
-                option.textContent = `Unit #${battery.unit_number}`;
-                batterySelect.appendChild(option);
-            });
-
-            batteryUnitGroup.style.display = 'block';
-            batterySelect.required = true;
-        } else {
-            batteryUnitGroup.style.display = 'none';
-            batterySelect.required = false;
-            batterySelect.value = '';
-        }
-    });
-
-    // Handle form submission
-    const form = document.getElementById('newRentalForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = {
-            customer_id: parseInt(form.customer_id.value),
-            battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null
-        };
-
-        try {
-            const response = await fetch('/api/rentals', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert('Rental created successfully!');
-                loadBatteryRentals();
-            } else {
-                alert(`Failed to create rental: ${result.error}`);
+                option.value = type.id;
+                option.textContent = `${type.name}${type.type === 'battery' ? ` (${type.available_units} available)` : ''}`;
+                batteryTypeSelect.appendChild(option);
             }
-        } catch (error) {
-            console.error('Error creating rental:', error);
-            alert('Failed to create rental. Please try again.');
-        }
-    });
+        });
+
+        // Handle battery type selection
+        const batteryUnitGroup = document.getElementById('batteryUnitGroup');
+        const batterySelect = document.getElementById('battery');
+
+        batteryTypeSelect.addEventListener('change', async () => {
+            const selectedTypeId = batteryTypeSelect.value;
+            console.log('Selected battery type ID:', selectedTypeId);
+
+            if (!selectedTypeId) {
+                batteryUnitGroup.style.display = 'none';
+                return;
+            }
+
+            // Get the battery type details
+            const selectedType = batteryTypes.find(t => t.id === parseInt(selectedTypeId));
+            console.log('Selected battery type:', selectedType);
+
+            if (selectedType && selectedType.type === 'battery') {
+                try {
+                    // Load available batteries for this type
+                    const batteriesResponse = await fetch('/api/batteries');
+                    const batteries = await batteriesResponse.json();
+                    console.log('Available batteries:', batteries);
+
+                    const availableBatteries = batteries.filter(b => 
+                        b.type_id === parseInt(selectedTypeId) && b.status === 'available'
+                    );
+                    console.log('Filtered available batteries:', availableBatteries);
+
+                    batterySelect.innerHTML = '<option value="">Select a battery unit</option>';
+                    availableBatteries.forEach(battery => {
+                        const option = document.createElement('option');
+                        option.value = battery.id;
+                        option.textContent = `Unit #${battery.unit_number}`;
+                        batterySelect.appendChild(option);
+                    });
+
+                    batteryUnitGroup.style.display = 'block';
+                    batterySelect.required = true;
+                } catch (error) {
+                    console.error('Error loading available batteries:', error);
+                    alert('Error loading available batteries. Please try again.');
+                }
+            } else {
+                batteryUnitGroup.style.display = 'none';
+                batterySelect.required = false;
+                batterySelect.value = '';
+            }
+        });
+
+        // Handle form submission
+        const form = document.getElementById('newRentalForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = {
+                customer_id: parseInt(form.customer_id.value),
+                battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null
+            };
+
+            try {
+                console.log('Submitting rental:', formData);
+                const response = await fetch('/api/rentals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                if (response.ok) {
+                    alert('Rental created successfully!');
+                    loadBatteryRentals();
+                } else {
+                    alert(`Failed to create rental: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error creating rental:', error);
+                alert('Failed to create rental. Please try again.');
+            }
+        });
+    } catch (error) {
+        console.error('Error initializing rental form:', error);
+        alert('Error loading form data. Please try again.');
+    }
 }
 
 function manageBatteries() {
@@ -624,18 +637,18 @@ function updateBatteryStatus(batteryId, currentStatus) {
         },
         body: JSON.stringify({ status: newStatus })
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert(`Failed to update status: ${result.error}`);
-        } else {
-            loadBatteries();
-        }
-    })
-    .catch(error => {
-        console.error('Error updating battery status:', error);
-        alert('Failed to update status. Please try again.');
-    });
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(`Failed to update status: ${result.error}`);
+            } else {
+                loadBatteries();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating battery status:', error);
+            alert('Failed to update status. Please try again.');
+        });
 }
 
 function deleteBattery(batteryId) {
@@ -649,18 +662,18 @@ function deleteBattery(batteryId) {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert(`Failed to delete battery: ${result.error}`);
-        } else {
-            loadBatteries();
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting battery:', error);
-        alert('Failed to delete battery. Please try again.');
-    });
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(`Failed to delete battery: ${result.error}`);
+            } else {
+                loadBatteries();
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting battery:', error);
+            alert('Failed to delete battery. Please try again.');
+        });
 }
 
 function addBattery() {
@@ -685,13 +698,14 @@ function addBattery() {
             </div>
             <div class="form-group" id="quantityGroup">
                 <label for="quantity">Number of Units:</label>
-                <input type="number" id="quantity" name="quantity" min="0" value="0">
+                <input type="number" id="quantity" name="quantity" min="1" value="1">
             </div>
             <button type="submit">Add Battery/Service</button>
             <button type="button" onclick="manageBatteries()">Cancel</button>
         </form>
     `;
 
+    // Add form event handlers
     const form = document.getElementById('addBatteryForm');
     const typeSelect = document.getElementById('type');
     const quantityGroup = document.getElementById('quantityGroup');
@@ -700,7 +714,13 @@ function addBattery() {
     typeSelect.addEventListener('change', () => {
         const isCharging = typeSelect.value === 'charging';
         quantityGroup.style.display = isCharging ? 'none' : 'block';
-        document.getElementById('quantity').required = !isCharging;
+        capacityGroup.style.display = isCharging ? 'none' : 'block';
+        if (isCharging) {
+            document.getElementById('capacity').value = '';
+            document.getElementById('quantity').value = '0';
+        } else {
+            document.getElementById('quantity').value = '1';
+        }
     });
 
     form.addEventListener('submit', async (e) => {
@@ -713,6 +733,7 @@ function addBattery() {
         };
 
         try {
+            console.log('Submitting battery/service:', formData);
             const response = await fetch('/api/battery-types', {
                 method: 'POST',
                 headers: {
@@ -722,6 +743,7 @@ function addBattery() {
             });
 
             const result = await response.json();
+            console.log('Server response:', result);
 
             if (response.ok) {
                 alert('Battery/Service added successfully!');
@@ -753,18 +775,18 @@ function updateBatteryQuantity(batteryId, currentQuantity) {
         },
         body: JSON.stringify({ quantity })
     })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert(`Failed to update quantity: ${result.error}`);
-        } else {
-            loadBatteries();
-        }
-    })
-    .catch(error => {
-        console.error('Error updating battery quantity:', error);
-        alert('Failed to update quantity. Please try again.');
-    });
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(`Failed to update quantity: ${result.error}`);
+            } else {
+                loadBatteries();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating battery quantity:', error);
+            alert('Failed to update quantity. Please try again.');
+        });
 }
 
 function loadWaterSales() {
