@@ -12,6 +12,164 @@ logger = logging.getLogger(__name__)
 
 bp = Blueprint('main', __name__)
 
+@bp.route('/api/dashboard/stats')
+def get_dashboard_stats():
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=30)
+
+        rentals = BatteryRental.query.filter(
+            BatteryRental.rented_at >= start_date,
+            BatteryRental.rented_at <= end_date
+        ).count()
+
+        water_sales = WaterSale.query.filter(
+            WaterSale.sold_at >= start_date,
+            WaterSale.sold_at <= end_date
+        ).count()
+
+        internet_accesses = InternetAccess.query.filter(
+            InternetAccess.purchased_at >= start_date,
+            InternetAccess.purchased_at <= end_date
+        ).count()
+
+        return jsonify({
+            'rentals': rentals,
+            'water_sales': water_sales,
+            'internet_accesses': internet_accesses
+        })
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {str(e)}")
+        return jsonify({'error': 'Failed to load dashboard statistics'}), 500
+
+@bp.route('/api/customers')
+def list_customers():
+    try:
+        customers = Customer.query.all()
+        return jsonify([{
+            'id': customer.id,
+            'first_name': customer.first_name,
+            'middle_name': customer.middle_name,
+            'family_name': customer.family_name,
+            'phone': customer.phone,
+            'address': customer.address,
+            'city': customer.city
+        } for customer in customers])
+    except Exception as e:
+        logger.error(f"Error listing customers: {str(e)}")
+        return jsonify({'error': 'Failed to load customers'}), 500
+
+@bp.route('/api/customers/<int:customer_id>')
+def get_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        return jsonify({
+            'id': customer.id,
+            'first_name': customer.first_name,
+            'middle_name': customer.middle_name,
+            'family_name': customer.family_name,
+            'phone': customer.phone,
+            'address': customer.address,
+            'city': customer.city,
+            'date_of_birth': customer.date_of_birth,
+            'city_of_birth': customer.city_of_birth,
+            'id_type': customer.id_type,
+            'id_number': customer.id_number
+        })
+    except Exception as e:
+        logger.error(f"Error getting customer {customer_id}: {str(e)}")
+        return jsonify({'error': f'Failed to load customer {customer_id}'}), 500
+
+@bp.route('/api/customers', methods=['POST'])
+def create_customer():
+    logger.info("Received POST request to create customer")
+    try:
+        # Get form data
+        data = request.form.to_dict()
+        logger.debug(f"Received form data: {data}")
+
+        # Create new customer instance
+        customer = Customer(
+            first_name=data['first_name'],
+            middle_name=data.get('middle_name'),
+            family_name=data['family_name'],
+            phone=data['phone'],
+            address=data.get('address'),
+            city=data.get('city'),
+            date_of_birth=data['date_of_birth'],
+            city_of_birth=data['city_of_birth'],
+            id_type=data['id_type'],
+            id_number=data['id_number']
+        )
+
+        # Handle optional photo uploads
+        if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
+            customer.selfie_photo = request.files['selfie_photo'].read()
+        if 'id_photo' in request.files and request.files['id_photo'].filename:
+            customer.id_photo = request.files['id_photo'].read()
+        if 'bill_photo' in request.files and request.files['bill_photo'].filename:
+            customer.bill_photo = request.files['bill_photo'].read()
+
+        db.session.add(customer)
+        db.session.commit()
+        logger.info(f"Customer created successfully with ID: {customer.id}")
+
+        return jsonify({
+            'message': 'Customer created successfully',
+            'customer_id': customer.id
+        }), 201
+
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"IntegrityError while creating customer: {str(e)}")
+        return jsonify({'error': 'Phone number already exists'}), 400
+    except KeyError as e:
+        db.session.rollback()
+        logger.error(f"KeyError while creating customer: {str(e)}")
+        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Unexpected error while creating customer: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
+def update_customer(customer_id):
+    logger.info(f"Received PUT request for customer_id: {customer_id}")
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        data = request.json
+        logger.debug(f"Updating customer {customer_id} with data: {data}")
+
+        if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
+            raise KeyError('Missing required fields')
+
+        customer.first_name = data['first_name']
+        customer.middle_name = data.get('middle_name')
+        customer.family_name = data['family_name']
+        customer.phone = data['phone']
+        customer.address = data.get('address')
+        customer.city = data.get('city')
+        customer.date_of_birth = data.get('date_of_birth')
+        customer.city_of_birth = data.get('city_of_birth')
+        customer.id_type = data.get('id_type')
+        customer.id_number = data.get('id_number')
+
+        db.session.commit()
+        logger.info(f"Customer {customer_id} updated successfully")
+        return jsonify({'message': 'Customer updated successfully'})
+    except IntegrityError as e:
+        db.session.rollback()
+        logger.error(f"IntegrityError while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': 'Phone number already exists'}), 400
+    except KeyError as e:
+        db.session.rollback()
+        logger.error(f"KeyError while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Unexpected error while updating customer {customer_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @bp.route('/api/battery-types', methods=['GET'])
 def list_battery_types():
     try:
@@ -178,228 +336,7 @@ def return_rental(rental_id):
         logger.error(f"Error returning rental: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/dashboard/stats')
-def get_dashboard_stats():
-    try:
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=30)
 
-        rentals = BatteryRental.query.filter(
-            BatteryRental.rented_at >= start_date,
-            BatteryRental.rented_at <= end_date
-        ).count()
-
-        water_sales = WaterSale.query.filter(
-            WaterSale.sold_at >= start_date,
-            WaterSale.sold_at <= end_date
-        ).count()
-
-        internet_accesses = InternetAccess.query.filter(
-            InternetAccess.purchased_at >= start_date,
-            InternetAccess.purchased_at <= end_date
-        ).count()
-
-        return jsonify({
-            'rentals': rentals,
-            'water_sales': water_sales,
-            'internet_accesses': internet_accesses
-        })
-    except Exception as e:
-        logger.error(f"Error getting dashboard stats: {str(e)}")
-        return jsonify({'error': 'Failed to load dashboard statistics'}), 500
-
-@bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
-def get_customer_photo(customer_id, photo_type):
-    try:
-        customer = Customer.query.get_or_404(customer_id)
-        if photo_type == 'selfie' and customer.selfie_photo:
-            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg')
-        elif photo_type == 'id' and customer.id_photo:
-            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg')
-        elif photo_type == 'bill' and customer.bill_photo:
-            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg')
-        return jsonify({'error': 'Photo not found'}), 404
-    except Exception as e:
-        logger.error(f"Error getting customer photo: {str(e)}")
-        return jsonify({'error': 'Failed to load photo'}), 500
-
-@bp.route('/api/customers', methods=['GET'])
-def list_customers():
-    try:
-        customers = Customer.query.all()
-        logger.debug(f"Returning customer list: {customers}")
-        customer_list = [{
-            'id': customer.id,
-            'first_name': customer.first_name,
-            'middle_name': customer.middle_name,
-            'family_name': customer.family_name,
-            'phone': customer.phone,
-            'address': customer.address,
-            'city': customer.city,
-            'date_of_birth': customer.date_of_birth,
-            'city_of_birth': customer.city_of_birth,
-            'id_type': customer.id_type,
-            'id_number': customer.id_number,
-            'has_selfie': bool(customer.selfie_photo),
-            'has_id_photo': bool(customer.id_photo),
-            'has_bill_photo': bool(customer.bill_photo)
-        } for customer in customers]
-        return jsonify(customer_list)
-    except Exception as e:
-        logger.error(f"Error listing customers: {str(e)}")
-        return jsonify({'error': 'Failed to load customers'}), 500
-
-@bp.route('/api/customers/<int:customer_id>', methods=['GET'])
-def get_customer(customer_id):
-    try:
-        customer = Customer.query.get_or_404(customer_id)
-        return jsonify({
-            'id': customer.id,
-            'first_name': customer.first_name,
-            'middle_name': customer.middle_name,
-            'family_name': customer.family_name,
-            'phone': customer.phone,
-            'address': customer.address,
-            'city': customer.city,
-            'date_of_birth': customer.date_of_birth,
-            'city_of_birth': customer.city_of_birth,
-            'id_type': customer.id_type,
-            'id_number': customer.id_number,
-            'has_selfie': bool(customer.selfie_photo),
-            'has_id_photo': bool(customer.id_photo),
-            'has_bill_photo': bool(customer.bill_photo)
-        })
-    except Exception as e:
-        logger.error(f"Error getting customer {customer_id}: {str(e)}")
-        return jsonify({'error': f'Failed to load customer {customer_id}'}), 500
-
-@bp.route('/api/customers', methods=['POST'])
-def create_customer():
-    logger.info("Received POST request to create customer")
-    try:
-        data = request.form.to_dict()
-        logger.debug(f"Received form data: {data}")
-
-        # Convert date string to Date object
-        try:
-            date_of_birth = datetime.strptime(data['date_of_birth'], '%Y-%m-%d').date()
-        except ValueError as e:
-            logger.error(f"Invalid date format: {e}")
-            return jsonify({'error': 'Invalid date format. Please use YYYY-MM-DD'}), 400
-
-        # Create new customer instance
-        customer = Customer(
-            first_name=data['first_name'],
-            middle_name=data.get('middle_name'),
-            family_name=data['family_name'],
-            phone=data['phone'],
-            address=data.get('address'),
-            city=data.get('city'),
-            date_of_birth=date_of_birth,
-            city_of_birth=data['city_of_birth'],
-            id_type=data['id_type'],
-            id_number=data['id_number']
-        )
-
-        # Handle photo uploads with proper error handling
-        if 'selfie_photo' in request.files:
-            file = request.files['selfie_photo']
-            if file and file.filename:
-                try:
-                    customer.selfie_photo = file.read()
-                    logger.debug("Selfie photo processed successfully")
-                except Exception as e:
-                    logger.error(f"Error processing selfie photo: {str(e)}")
-                    return jsonify({'error': 'Error processing selfie photo'}), 400
-
-        if 'id_photo' in request.files:
-            file = request.files['id_photo']
-            if file and file.filename:
-                try:
-                    customer.id_photo = file.read()
-                    logger.debug("ID photo processed successfully")
-                except Exception as e:
-                    logger.error(f"Error processing ID photo: {str(e)}")
-                    return jsonify({'error': 'Error processing ID photo'}), 400
-
-        if 'bill_photo' in request.files:
-            file = request.files['bill_photo']
-            if file and file.filename:
-                try:
-                    customer.bill_photo = file.read()
-                    logger.debug("Bill photo processed successfully")
-                except Exception as e:
-                    logger.error(f"Error processing bill photo: {str(e)}")
-                    return jsonify({'error': 'Error processing bill photo'}), 400
-
-        db.session.add(customer)
-        db.session.commit()
-        logger.info(f"Customer created successfully with ID: {customer.id}")
-
-        return jsonify({
-            'message': 'Customer created successfully',
-            'customer_id': customer.id
-        }), 201
-
-    except IntegrityError as e:
-        db.session.rollback()
-        logger.error(f"IntegrityError while creating customer: {str(e)}")
-        return jsonify({'error': 'Phone number already exists'}), 400
-    except KeyError as e:
-        db.session.rollback()
-        logger.error(f"KeyError while creating customer: {str(e)}")
-        return jsonify({'error': f'Missing required field: {str(e)}'}), 400
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Unexpected error while creating customer: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
-def update_customer(customer_id):
-    logger.info(f"Received PUT request for customer_id: {customer_id}")
-    try:
-        customer = Customer.query.get_or_404(customer_id)
-        data = request.form.to_dict()
-        logger.debug(f"Updating customer {customer_id} with data: {data}")
-        logger.debug(f"Files received in update: {list(request.files.keys())}")
-
-        # Update customer information
-        for field in ['first_name', 'middle_name', 'family_name', 'phone', 'address', 
-                     'city', 'date_of_birth', 'city_of_birth', 'id_type', 'id_number']:
-            if field in data:
-                setattr(customer, field, data[field])
-
-        # Handle photo updates
-        if 'selfie_photo' in request.files:
-            file = request.files['selfie_photo']
-            if file and file.filename:
-                logger.debug(f"Processing updated selfie photo: {file.filename}")
-                customer.selfie_photo = file.read()
-                logger.debug("Updated selfie photo processed successfully")
-
-        if 'id_photo' in request.files:
-            file = request.files['id_photo']
-            if file and file.filename:
-                logger.debug(f"Processing updated ID photo: {file.filename}")
-                customer.id_photo = file.read()
-                logger.debug("Updated ID photo processed successfully")
-
-        if 'bill_photo' in request.files:
-            file = request.files['bill_photo']
-            if file and file.filename:
-                logger.debug(f"Processing updated bill photo: {file.filename}")
-                customer.bill_photo = file.read()
-                logger.debug("Updated bill photo processed successfully")
-
-        db.session.commit()
-        logger.info(f"Customer {customer_id} updated successfully")
-        return jsonify({'message': 'Customer updated successfully'})
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating customer {customer_id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-# Water Sales endpoints
 @bp.route('/api/water-sales', methods=['GET'])
 def get_water_sales():
     try:
@@ -430,3 +367,42 @@ def get_internet_access():
     except Exception as e:
         logger.error(f"Error getting internet access records: {str(e)}")
         return jsonify({'error': 'Failed to load internet access records'}), 500
+
+@bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
+def get_customer_photo(customer_id, photo_type):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        if photo_type == 'selfie' and customer.selfie_photo:
+            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg')
+        elif photo_type == 'id' and customer.id_photo:
+            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg')
+        elif photo_type == 'bill' and customer.bill_photo:
+            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg')
+        return jsonify({'error': 'Photo not found'}), 404
+    except Exception as e:
+        logger.error(f"Error getting customer photo: {str(e)}")
+        return jsonify({'error': 'Failed to load photo'}), 500
+
+@bp.route('/api/customers/<int:customer_id>', methods=['GET'])
+def get_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        return jsonify({
+            'id': customer.id,
+            'first_name': customer.first_name,
+            'middle_name': customer.middle_name,
+            'family_name': customer.family_name,
+            'phone': customer.phone,
+            'address': customer.address,
+            'city': customer.city,
+            'date_of_birth': customer.date_of_birth,
+            'city_of_birth': customer.city_of_birth,
+            'id_type': customer.id_type,
+            'id_number': customer.id_number,
+            'has_selfie': bool(customer.selfie_photo),
+            'has_id_photo': bool(customer.id_photo),
+            'has_bill_photo': bool(customer.bill_photo)
+        })
+    except Exception as e:
+        logger.error(f"Error getting customer {customer_id}: {str(e)}")
+        return jsonify({'error': f'Failed to load customer {customer_id}'}), 500
