@@ -502,7 +502,7 @@ async function newRental() {
                     const batteries = await batteriesResponse.json();
                     console.log('Available batteries:', batteries);
 
-                    const availableBatteries = batteries.filter(b => 
+                    const availableBatteries = batteries.filter(b =>
                         b.type_id === parseInt(selectedTypeId) && b.status === 'available'
                     );
                     console.log('Filtered available batteries:', availableBatteries);
@@ -842,6 +842,78 @@ function loadWaterSales() {
         });
 }
 
+function newWaterSale() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>New Water Sale</h2>
+        <form id="newWaterSaleForm">
+            <div class="form-group">
+                <label for="customer">Select Customer:</label>
+                <select id="customer" name="customer_id" required>
+                    <option value="">Select a customer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="size">Water Size (liters):</label>
+                <input type="number" id="size" name="size" min="0.1" step="0.1" required>
+            </div>
+            <button type="submit">Create Sale</button>
+            <button type="button" onclick="loadWaterSales()">Cancel</button>
+        </form>
+    `;
+
+    // Load customers
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customer');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            alert('Error loading customers. Please try again.');
+        });
+
+    // Handle form submission
+    const form = document.getElementById('newWaterSaleForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            customer_id: parseInt(form.customer_id.value),
+            size: parseFloat(form.size.value)
+        };
+
+        try {
+            console.log('Submitting water sale:', formData);
+            const response = await fetch('/api/water-sales', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok) {
+                alert('Water sale created successfully!');
+                loadWaterSales();
+            } else {
+                alert(`Failed to create water sale: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error creating water sale:', error);
+            alert('Failed to create water sale. Please try again.');
+        }
+    });
+}
+
 function viewWaterSale(saleId) {
     // You can implement a detailed view for a specific water sale if needed
     alert(`Viewing details for water sale ${saleId}`);
@@ -979,3 +1051,70 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+function newInternetAccess() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>New Internet Access</h2>
+        <form id="newInternetAccessForm">
+            <div class="form-group">
+                <label for="customer">Select Customer:</label>
+                <select id="customer" name="customer_id" required>
+                    <option value="">Select a customer</option>
+                </select>
+            </div>
+            <button type="submit">Create Internet Access</button>
+            <button type="button" onclick="loadInternetAccess()">Cancel</button>
+        </form>
+    `;
+
+    // Load customers
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customer');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            alert('Error loading customers. Please try again.');
+        });
+
+    // Handle form submission
+    const form = document.getElementById('newInternetAccessForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            customer_id: parseInt(form.customer_id.value)
+        };
+
+        try {
+            console.log('Submitting internet access:', formData);
+            const response = await fetch('/api/internet-access', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok) {
+                alert('Internet access created successfully!');
+                loadInternetAccess();
+            } else {
+                alert(`Failed to create internet access: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error creating internet access:', error);
+            alert('Failed to create internet access. Please try again.');
+        }
+    });
+}

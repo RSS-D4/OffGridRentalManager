@@ -354,6 +354,31 @@ def get_water_sales():
         logger.error(f"Error getting water sales: {str(e)}")
         return jsonify({'error': 'Failed to load water sales'}), 500
 
+@bp.route('/api/water-sales', methods=['POST'])
+def create_water_sale():
+    try:
+        data = request.get_json()
+        logger.debug(f"Received water sale data: {data}")
+
+        customer = Customer.query.get_or_404(data['customer_id'])
+
+        water_sale = WaterSale(
+            customer_id=customer.id,
+            size=data['size']
+        )
+
+        db.session.add(water_sale)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Water sale created successfully',
+            'water_sale_id': water_sale.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating water sale: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 # Internet Access endpoints
 @bp.route('/api/internet-access', methods=['GET'])
 def get_internet_access():
@@ -369,6 +394,30 @@ def get_internet_access():
     except Exception as e:
         logger.error(f"Error getting internet access records: {str(e)}")
         return jsonify({'error': 'Failed to load internet access records'}), 500
+
+@bp.route('/api/internet-access', methods=['POST'])
+def create_internet_access():
+    try:
+        data = request.get_json()
+        logger.debug(f"Received internet access data: {data}")
+
+        customer = Customer.query.get_or_404(data['customer_id'])
+
+        internet_access = InternetAccess(
+            customer_id=customer.id
+        )
+
+        db.session.add(internet_access)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Internet access created successfully',
+            'internet_access_id': internet_access.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating internet access: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):
