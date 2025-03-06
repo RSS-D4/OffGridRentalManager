@@ -448,7 +448,7 @@ async function newRental() {
             </div>
             <div class="form-group" id="batteryUnitGroup" style="display: none;">
                 <label for="battery">Select Battery Unit:</label>
-                <select id="battery" name="battery_id" required>
+                <select id="battery" name="battery_id">
                     <option value="">Select a battery unit</option>
                 </select>
             </div>
@@ -488,6 +488,7 @@ async function newRental() {
                 const option = document.createElement('option');
                 option.value = type.id;
                 option.textContent = `${type.name}${type.type === 'battery' ? ` (${type.available_units} available)` : ''}`;
+                option.dataset.type = type.type;  // Store the type information
                 batteryTypeSelect.appendChild(option);
             }
         });
@@ -502,6 +503,7 @@ async function newRental() {
 
             if (!selectedTypeId) {
                 batteryUnitGroup.style.display = 'none';
+                batterySelect.required = false;
                 return;
             }
 
@@ -546,12 +548,26 @@ async function newRental() {
         const form = document.getElementById('newRentalForm');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Get the selected battery type
+            const batteryTypeId = parseInt(form.battery_type_id.value);
+            const selectedType = batteryTypes.find(t => t.id === batteryTypeId);
+
             const formData = {
                 customer_id: parseInt(form.customer_id.value),
-                battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null,
+                battery_type_id: batteryTypeId,
                 rental_price: parseFloat(form.rental_price.value),
                 delivery_fee: parseFloat(form.delivery_fee.value)
             };
+
+            // Only include battery_id for physical battery rentals
+            if (selectedType && selectedType.type === 'battery') {
+                if (!form.battery_id.value) {
+                    alert('Please select a battery unit');
+                    return;
+                }
+                formData.battery_id = parseInt(form.battery_id.value);
+            }
 
             try {
                 console.log('Submitting rental:', formData);
@@ -901,10 +917,7 @@ function manageBatteries() {
         </div>
     `;
 
-    loadBatteries();
-}
-
-function loadBatteries() {
+    // Load batteries data
     fetch('/api/batteries')
         .then(response => response.json())
         .then(batteries => {

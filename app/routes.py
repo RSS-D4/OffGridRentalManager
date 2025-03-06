@@ -139,21 +139,40 @@ def create_rental():
     try:
         data = request.get_json()
         logger.debug(f"Received rental data: {data}")
+
         customer = Customer.query.get_or_404(data['customer_id'])
-        battery = Battery.query.get_or_404(data['battery_id'])
+        battery_type_id = data.get('battery_type_id')
 
-        if battery.status != 'available':
-            return jsonify({'error': 'Battery is not available for rent'}), 400
+        # Check if this is a battery rental or a charging service
+        if data.get('battery_id'):
+            # This is a physical battery rental
+            battery = Battery.query.get_or_404(data['battery_id'])
 
-        rental = BatteryRental(
-            customer_id=customer.id,
-            battery_id=battery.id,
-            battery_type_id=battery.battery_type_id,  # Make sure to set the battery_type_id
-            rental_price=data.get('rental_price', 0.0),
-            delivery_fee=data.get('delivery_fee', 0.0)
-        )
+            if battery.status != 'available':
+                return jsonify({'error': 'Battery is not available for rent'}), 400
 
-        battery.status = 'rented'
+            rental = BatteryRental(
+                customer_id=customer.id,
+                battery_id=battery.id,
+                battery_type_id=battery.battery_type_id,
+                rental_price=data.get('rental_price', 0.0),
+                delivery_fee=data.get('delivery_fee', 0.0)
+            )
+
+            # Update battery status
+            battery.status = 'rented'
+
+        else:
+            # This is a charging service (no physical battery)
+            battery_type = BatteryType.query.get_or_404(data['battery_type_id'])
+
+            rental = BatteryRental(
+                customer_id=customer.id,
+                battery_id=None,
+                battery_type_id=battery_type.id,
+                rental_price=data.get('rental_price', 0.0),
+                delivery_fee=data.get('delivery_fee', 0.0)
+            )
 
         db.session.add(rental)
         db.session.commit()
@@ -175,7 +194,10 @@ def return_rental(rental_id):
             return jsonify({'error': 'Rental already returned'}), 400
 
         rental.returned_at = datetime.utcnow()
-        rental.battery.status = 'available'
+
+        # If this is a physical battery rental, update the battery status
+        if rental.battery:
+            rental.battery.status = 'available'
 
         db.session.commit()
         return jsonify({'message': 'Rental returned successfully'})
