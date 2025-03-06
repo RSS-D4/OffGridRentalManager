@@ -1,4 +1,3 @@
-
 from app import db
 from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -32,7 +31,7 @@ class BatteryType(db.Model):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'battery' or 'charging'
     capacity: Mapped[str] = mapped_column(String(50), nullable=True)
-    
+
     # Relationship with batteries
     batteries: Mapped[list["Battery"]] = relationship("Battery", back_populates="battery_type")
 
@@ -41,7 +40,7 @@ class Battery(db.Model):
     battery_type_id: Mapped[int] = mapped_column(Integer, ForeignKey('battery_type.id'), nullable=False)
     unit_number: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default='available')  # 'available', 'rented', 'maintenance'
-    
+
     # Relationship with battery type
     battery_type: Mapped["BatteryType"] = relationship("BatteryType", back_populates="batteries")
 
@@ -50,9 +49,11 @@ class BatteryRental(db.Model):
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
     battery_id: Mapped[int] = mapped_column(Integer, ForeignKey('battery.id'), nullable=True)
     battery_type_id: Mapped[int] = mapped_column(Integer, ForeignKey('battery_type.id'), nullable=False)
+    rental_price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    delivery_fee: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     rented_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     returned_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    
+
     # Relationships
     customer: Mapped["Customer"] = relationship("Customer", backref="rentals")
     battery: Mapped["Battery"] = relationship("Battery", backref="rentals")
@@ -62,6 +63,7 @@ class WaterSale(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
     size: Mapped[float] = mapped_column(Float, nullable=False)
+    price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     sold_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     customer: Mapped["Customer"] = relationship("Customer", backref="water_purchases")
 

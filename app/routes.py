@@ -123,7 +123,9 @@ def get_rentals():
         rental_list = [{
             'id': rental.id,
             'customer_name': f"{rental.customer.first_name} {rental.customer.family_name}",
-            'battery_name': f"{rental.battery.battery_type.name} (Unit #{rental.battery.unit_number})",
+            'battery_name': f"{rental.battery.battery_type.name} (Unit #{rental.battery.unit_number})" if rental.battery else rental.battery_type.name,
+            'rental_price': rental.rental_price,
+            'delivery_fee': rental.delivery_fee,
             'rented_at': rental.rented_at.isoformat(),
             'returned_at': rental.returned_at.isoformat() if rental.returned_at else None
         } for rental in rentals]
@@ -146,7 +148,9 @@ def create_rental():
         rental = BatteryRental(
             customer_id=customer.id,
             battery_id=battery.id,
-            battery_type_id=battery.battery_type_id  # Make sure to set the battery_type_id
+            battery_type_id=battery.battery_type_id,  # Make sure to set the battery_type_id
+            rental_price=data.get('rental_price', 0.0),
+            delivery_fee=data.get('delivery_fee', 0.0)
         )
 
         battery.status = 'rented'
@@ -347,6 +351,7 @@ def get_water_sales():
             'id': sale.id,
             'customer_name': f"{sale.customer.first_name} {sale.customer.family_name}",
             'size': sale.size,
+            'price': sale.price,
             'sold_at': sale.sold_at.isoformat()
         } for sale in sales]
         return jsonify(sales_list)
@@ -364,7 +369,8 @@ def create_water_sale():
 
         water_sale = WaterSale(
             customer_id=customer.id,
-            size=data['size']
+            size=data['size'],
+            price=data['price']
         )
 
         db.session.add(water_sale)

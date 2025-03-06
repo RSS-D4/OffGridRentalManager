@@ -378,13 +378,15 @@ function loadBatteryRentals() {
                     <tr>
                         <th>Customer</th>
                         <th>Battery/Service</th>
+                        <th>Rental Price</th>
+                        <th>Delivery Fee</th>
                         <th>Rented At</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="rentalsTableBody">
-                    <tr><td colspan="5">Loading rentals...</td></tr>
+                    <tr><td colspan="7">Loading rentals...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -397,13 +399,15 @@ function loadBatteryRentals() {
             const tbody = document.getElementById('rentalsTableBody');
             if (tbody) {
                 if (rentals.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5">No rentals found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7">No rentals found</td></tr>';
                     return;
                 }
                 tbody.innerHTML = rentals.map(rental => `
                     <tr>
                         <td>${rental.customer_name}</td>
                         <td>${rental.battery_name}</td>
+                        <td>$${rental.rental_price.toFixed(2)}</td>
+                        <td>$${rental.delivery_fee.toFixed(2)}</td>
                         <td>${new Date(rental.rented_at).toLocaleString()}</td>
                         <td>${rental.returned_at ? 'Returned' : 'Active'}</td>
                         <td>
@@ -418,7 +422,7 @@ function loadBatteryRentals() {
             console.error('Error loading rentals:', error);
             const tbody = document.getElementById('rentalsTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="5">Error loading rentals</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7">Error loading rentals</td></tr>';
             }
         });
 }
@@ -445,6 +449,14 @@ async function newRental() {
                 <select id="battery" name="battery_id" required>
                     <option value="">Select a battery unit</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label for="rental_price">Rental Price:</label>
+                <input type="number" id="rental_price" name="rental_price" min="0" step="0.01" required value="0">
+            </div>
+            <div class="form-group">
+                <label for="delivery_fee">Delivery Fee:</label>
+                <input type="number" id="delivery_fee" name="delivery_fee" min="0" step="0.01" required value="0">
             </div>
             <button type="submit">Create Rental</button>
             <button type="button" onclick="loadBatteryRentals()">Cancel</button>
@@ -534,7 +546,9 @@ async function newRental() {
             e.preventDefault();
             const formData = {
                 customer_id: parseInt(form.customer_id.value),
-                battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null
+                battery_id: form.battery_id.value ? parseInt(form.battery_id.value) : null,
+                rental_price: parseFloat(form.rental_price.value),
+                delivery_fee: parseFloat(form.delivery_fee.value)
             };
 
             try {
@@ -565,6 +579,138 @@ async function newRental() {
         console.error('Error initializing rental form:', error);
         alert('Error loading form data. Please try again.');
     }
+}
+
+function loadWaterSales() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Water Sales</h2>
+        <button onclick="newWaterSale()" class="add-button">New Water Sale</button>
+        <div id="waterSalesList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Size</th>
+                        <th>Price</th>
+                        <th>Sold At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="waterSalesTableBody">
+                    <tr><td colspan="5">Loading water sales...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Load water sales data
+    fetch('/api/water-sales')
+        .then(response => response.json())
+        .then(sales => {
+            const tbody = document.getElementById('waterSalesTableBody');
+            if (tbody) {
+                if (sales.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No water sales found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = sales.map(sale => `
+                    <tr>
+                        <td>${sale.customer_name}</td>
+                        <td>${sale.size} liters</td>
+                        <td>$${sale.price.toFixed(2)}</td>
+                        <td>${new Date(sale.sold_at).toLocaleString()}</td>
+                        <td>
+                            <button onclick="viewWaterSale(${sale.id})">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading water sales:', error);
+            const tbody = document.getElementById('waterSalesTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5">Error loading water sales</td></tr>';
+            }
+        });
+}
+
+function newWaterSale() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>New Water Sale</h2>
+        <form id="newWaterSaleForm">
+            <div class="form-group">
+                <label for="customer">Select Customer:</label>
+                <select id="customer" name="customer_id" required>
+                    <option value="">Select a customer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="size">Water Size (liters):</label>
+                <input type="number" id="size" name="size" min="0.1" step="0.1" required>
+            </div>
+            <div class="form-group">
+                <label for="price">Price:</label>
+                <input type="number" id="price" name="price" min="0" step="0.01" required>
+            </div>
+            <button type="submit">Create Sale</button>
+            <button type="button" onclick="loadWaterSales()">Cancel</button>
+        </form>
+    `;
+
+    // Load customers
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customer');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            alert('Error loading customers. Please try again.');
+        });
+
+    // Handle form submission
+    const form = document.getElementById('newWaterSaleForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            customer_id: parseInt(form.customer_id.value),
+            size: parseFloat(form.size.value),
+            price: parseFloat(form.price.value)
+        };
+
+        try {
+            console.log('Submitting water sale:', formData);
+            const response = await fetch('/api/water-sales', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok) {
+                alert('Water sale created successfully!');
+                loadWaterSales();
+            } else {
+                alert(`Failed to create water sale: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error creating water sale:', error);
+            alert('Failed to create water sale. Please try again.');
+        }
+    });
 }
 
 function manageBatteries() {
@@ -800,12 +946,13 @@ function loadWaterSales() {
                     <tr>
                         <th>Customer</th>
                         <th>Size</th>
+                        <th>Price</th>
                         <th>Sold At</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="waterSalesTableBody">
-                    <tr><td colspan="4">Loading water sales...</td></tr>
+                    <tr><td colspan="5">Loading water sales...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -818,13 +965,14 @@ function loadWaterSales() {
             const tbody = document.getElementById('waterSalesTableBody');
             if (tbody) {
                 if (sales.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4">No water sales found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5">No water sales found</td></tr>';
                     return;
                 }
                 tbody.innerHTML = sales.map(sale => `
                     <tr>
                         <td>${sale.customer_name}</td>
                         <td>${sale.size} liters</td>
+                        <td>$${sale.price.toFixed(2)}</td>
                         <td>${new Date(sale.sold_at).toLocaleString()}</td>
                         <td>
                             <button onclick="viewWaterSale(${sale.id})">View</button>
@@ -837,7 +985,7 @@ function loadWaterSales() {
             console.error('Error loading water sales:', error);
             const tbody = document.getElementById('waterSalesTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4">Error loading water sales</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">Error loading water sales</td></tr>';
             }
         });
 }
@@ -856,6 +1004,10 @@ function newWaterSale() {
             <div class="form-group">
                 <label for="size">Water Size (liters):</label>
                 <input type="number" id="size" name="size" min="0.1" step="0.1" required>
+            </div>
+            <div class="form-group">
+                <label for="price">Price:</label>
+                <input type="number" id="price" name="price" min="0" step="0.01" required>
             </div>
             <button type="submit">Create Sale</button>
             <button type="button" onclick="loadWaterSales()">Cancel</button>
@@ -885,7 +1037,8 @@ function newWaterSale() {
         e.preventDefault();
         const formData = {
             customer_id: parseInt(form.customer_id.value),
-            size: parseFloat(form.size.value)
+            size: parseFloat(form.size.value),
+            price: parseFloat(form.price.value)
         };
 
         try {
