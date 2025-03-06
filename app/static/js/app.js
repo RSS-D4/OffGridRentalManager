@@ -451,11 +451,11 @@ async function newRental() {
                 </select>
             </div>
             <div class="form-group">
-                <label for="rental_price">Rental Price:</label>
+                <label for="rental_price">Rental Price ($):</label>
                 <input type="number" id="rental_price" name="rental_price" min="0" step="0.01" required value="0">
             </div>
             <div class="form-group">
-                <label for="delivery_fee">Delivery Fee:</label>
+                <label for="delivery_fee">Delivery Fee ($):</label>
                 <input type="number" id="delivery_fee" name="delivery_fee" min="0" step="0.01" required value="0">
             </div>
             <button type="submit">Create Rental</button>
@@ -652,7 +652,7 @@ function newWaterSale() {
                 <input type="number" id="size" name="size" min="0.1" step="0.1" required>
             </div>
             <div class="form-group">
-                <label for="price">Price:</label>
+                <label for="price">Price ($):</label>
                 <input type="number" id="price" name="price" min="0" step="0.01" required>
             </div>
             <button type="submit">Create Sale</button>
@@ -709,197 +709,6 @@ function newWaterSale() {
         } catch (error) {
             console.error('Error creating water sale:', error);
             alert('Failed to create water sale. Please try again.');
-        }
-    });
-}
-
-function manageBatteries() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <h2>Battery Management</h2>
-        <button onclick="addBattery()" class="add-button">Add New Battery/Service</button>
-        <div id="batteriesList">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Brand</th>
-                        <th>Type</th>
-                        <th>Capacity</th>
-                        <th>Unit Number</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="batteriesTableBody">
-                    <tr><td colspan="6">Loading batteries...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    loadBatteries();
-}
-
-function loadBatteries() {
-    fetch('/api/batteries')
-        .then(response => response.json())
-        .then(batteries => {
-            const tbody = document.getElementById('batteriesTableBody');
-            if (tbody) {
-                if (batteries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6">No batteries found</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = batteries.map(battery => `
-                    <tr>
-                        <td>${battery.type_name}</td>
-                        <td>${battery.type}</td>
-                        <td>${battery.capacity || 'N/A'}</td>
-                        <td>${battery.unit_number}</td>
-                        <td>${battery.status}</td>
-                        <td>
-                            <button onclick="updateBatteryStatus(${battery.id}, '${battery.status}')">Update Status</button>
-                            <button onclick="deleteBattery(${battery.id})" class="delete-button">Delete</button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        });
-}
-
-function updateBatteryStatus(batteryId, currentStatus) {
-    const newStatus = prompt('Enter new status (available, maintenance):', currentStatus);
-    if (newStatus === null) return;
-
-    if (!['available', 'maintenance'].includes(newStatus)) {
-        alert('Invalid status. Please use "available" or "maintenance"');
-        return;
-    }
-
-    fetch(`/api/batteries/${batteryId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
-    })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert(`Failed to update status: ${result.error}`);
-            } else {
-                loadBatteries();
-            }
-        })
-        .catch(error => {
-            console.error('Error updating battery status:', error);
-            alert('Failed to update status. Please try again.');
-        });
-}
-
-function deleteBattery(batteryId) {
-    if (!confirm('Are you sure you want to delete this battery? This action cannot be undone.')) {
-        return;
-    }
-
-    fetch(`/api/batteries/${batteryId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert(`Failed to delete battery: ${result.error}`);
-            } else {
-                loadBatteries();
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting battery:', error);
-            alert('Failed to delete battery. Please try again.');
-        });
-}
-
-function addBattery() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <h2>Add New Battery/Service</h2>
-        <form id="addBatteryForm">
-            <div class="form-group">
-                <label for="name">Brand:</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="type">Type:</label>
-                <select id="type" name="type" required>
-                    <option value="battery">Battery</option>
-                    <option value="charging">Charging Service</option>
-                </select>
-            </div>
-            <div class="form-group" id="capacityGroup">
-                <label for="capacity">Capacity (e.g., "250 Wh" or "2.4 kWh"):</label>
-                <input type="text" id="capacity" name="capacity">
-            </div>
-            <div class="form-group" id="quantityGroup">
-                <label for="quantity">Number of Units:</label>
-                <input type="number" id="quantity" name="quantity" min="1" value="1">
-            </div>
-            <button type="submit">Add Battery/Service</button>
-            <button type="button" onclick="manageBatteries()">Cancel</button>
-        </form>
-    `;
-
-    // Add form event handlers
-    const form = document.getElementById('addBatteryForm');
-    const typeSelect = document.getElementById('type');
-    const quantityGroup = document.getElementById('quantityGroup');
-    const capacityGroup = document.getElementById('capacityGroup');
-
-    typeSelect.addEventListener('change', () => {
-        const isCharging = typeSelect.value === 'charging';
-        quantityGroup.style.display = isCharging ? 'none' : 'block';
-        capacityGroup.style.display = isCharging ? 'none' : 'block';
-        if (isCharging) {
-            document.getElementById('capacity').value = '';
-            document.getElementById('quantity').value = '0';
-        } else {
-            document.getElementById('quantity').value = '1';
-        }
-    });
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = {
-            name: form.name.value,
-            type: form.type.value,
-            capacity: form.capacity.value || null,
-            quantity: form.type.value === 'battery' ? parseInt(form.quantity.value) : 0
-        };
-
-        try {
-            console.log('Submitting battery/service:', formData);
-            const response = await fetch('/api/battery-types', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-            console.log('Server response:', result);
-
-            if (response.ok) {
-                alert('Battery/Service added successfully!');
-                manageBatteries();
-            } else {
-                alert(`Failed to add battery/service: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Error adding battery/service:', error);
-            alert('Failed to add battery/service. Please try again.');
         }
     });
 }
@@ -933,138 +742,6 @@ function returnRental(rentalId) {
 function viewRental(rentalId) {
     // You can implement a detailed view for a specific rental if needed
     alert(`Viewing details for rental ${rentalId}`);
-}
-
-function loadWaterSales() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <h2>Water Sales</h2>
-        <button onclick="newWaterSale()" class="add-button">New Water Sale</button>
-        <div id="waterSalesList">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Customer</th>
-                        <th>Size</th>
-                        <th>Price</th>
-                        <th>Sold At</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="waterSalesTableBody">
-                    <tr><td colspan="5">Loading water sales...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    // Load water sales data
-    fetch('/api/water-sales')
-        .then(response => response.json())
-        .then(sales => {
-            const tbody = document.getElementById('waterSalesTableBody');
-            if (tbody) {
-                if (sales.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5">No water sales found</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = sales.map(sale => `
-                    <tr>
-                        <td>${sale.customer_name}</td>
-                        <td>${sale.size} liters</td>
-                        <td>$${sale.price.toFixed(2)}</td>
-                        <td>${new Date(sale.sold_at).toLocaleString()}</td>
-                        <td>
-                            <button onclick="viewWaterSale(${sale.id})">View</button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading water sales:', error);
-            const tbody = document.getElementById('waterSalesTableBody');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="5">Error loading water sales</td></tr>';
-            }
-        });
-}
-
-function newWaterSale() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <h2>New Water Sale</h2>
-        <form id="newWaterSaleForm">
-            <div class="form-group">
-                <label for="customer">Select Customer:</label>
-                <select id="customer" name="customer_id" required>
-                    <option value="">Select a customer</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="size">Water Size (liters):</label>
-                <input type="number" id="size" name="size" min="0.1" step="0.1" required>
-            </div>
-            <div class="form-group">
-                <label for="price">Price:</label>
-                <input type="number" id="price" name="price" min="0" step="0.01" required>
-            </div>
-            <button type="submit">Create Sale</button>
-            <button type="button" onclick="loadWaterSales()">Cancel</button>
-        </form>
-    `;
-
-    // Load customers
-    fetch('/api/customers')
-        .then(response => response.json())
-        .then(customers => {
-            const select = document.getElementById('customer');
-            customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
-                select.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading customers:', error);
-            alert('Error loading customers. Please try again.');
-        });
-
-    // Handle form submission
-    const form = document.getElementById('newWaterSaleForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = {
-            customer_id: parseInt(form.customer_id.value),
-            size: parseFloat(form.size.value),
-            price: parseFloat(form.price.value)
-        };
-
-        try {
-            console.log('Submitting water sale:', formData);
-            const response = await fetch('/api/water-sales', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-            console.log('Server response:', result);
-
-            if (response.ok) {
-                alert('Water sale created successfully!');
-                loadWaterSales();
-            } else {
-                alert(`Failed to create water sale: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Error creating water sale:', error);
-            alert('Failed to create water sale. Please try again.');
-        }
-    });
 }
 
 function viewWaterSale(saleId) {
@@ -1128,6 +805,263 @@ function loadInternetAccess() {
 function viewInternetAccess(accessId) {
     // You can implement a detailed view for a specific internet access record if needed
     alert(`Viewing details for internet access ${accessId}`);
+}
+
+function newInternetAccess() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>New Internet Access</h2>
+        <form id="newInternetAccessForm">
+            <div class="form-group">
+                <label for="customer">Select Customer:</label>
+                <select id="customer" name="customer_id" required>
+                    <option value="">Select a customer</option>
+                </select>
+            </div>
+            <button type="submit">Create Internet Access</button>
+            <button type="button" onclick="loadInternetAccess()">Cancel</button>
+        </form>
+    `;
+
+    // Load customers
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customer');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            alert('Error loading customers. Please try again.');
+        });
+
+    // Handle form submission
+    const form = document.getElementById('newInternetAccessForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            customer_id: parseInt(form.customer_id.value)
+        };
+
+        try {
+            console.log('Submitting internet access:', formData);
+            const response = await fetch('/api/internet-access', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok) {
+                alert('Internet access created successfully!');
+                loadInternetAccess();
+            } else {
+                alert(`Failed to create internet access: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error creating internet access:', error);
+            alert('Failed to create internet access. Please try again.');
+        }
+    });
+}
+
+function manageBatteries() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Battery Management</h2>
+        <button onclick="addBattery()" class="add-button">Add New Battery/Service</button>
+        <div id="batteriesList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Brand</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Unit Number</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="batteriesTableBody">
+                    <tr><td colspan="6">Loading batteries...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    loadBatteries();
+}
+
+function loadBatteries() {
+    fetch('/api/batteries')
+        .then(response => response.json())
+        .then(batteries => {
+            const tbody = document.getElementById('batteriesTableBody');
+            if (tbody) {
+                if (batteries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No batteries found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = batteries.map(battery => `
+                    <tr>
+                        <td>${battery.type_name}</td>
+                        <td>${battery.type}</td>
+                        <td>${battery.capacity || 'N/A'}</td>
+                        <td>${battery.unit_number}</td>
+                        <td>${battery.status}</td>
+                        <td>
+                            <button onclick="updateBatteryStatus(${battery.id}, '${battery.status}')">Update Status</button>
+                            <button onclick="deleteBattery(${battery.id})" class="delete-button">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        });
+}
+
+function updateBatteryStatus(batteryId, currentStatus) {
+    const newStatus = prompt('Enter new status (available, maintenance):', currentStatus);
+    if (newStatus === null || !['available', 'maintenance'].includes(newStatus)) {
+        alert('Invalid status. Status must be "available" or "maintenance".');
+        return;
+    }
+
+    fetch(`/api/batteries/${batteryId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(`Failed to update status: ${result.error}`);
+            } else {
+                loadBatteries();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating battery status:', error);
+            alert('Failed to update status. Please try again.');
+        });
+}
+
+function deleteBattery(batteryId) {
+    if (!confirm('Are you sure you want to delete this battery?')) {
+        return;
+    }
+
+    fetch(`/api/batteries/${batteryId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert(`Failed to delete battery: ${result.error}`);
+            } else {
+                loadBatteries();
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting battery:', error);
+            alert('Failed to delete battery. Please try again.');
+        });
+}
+
+function addBattery() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Add New Battery/Service</h2>
+        <form id="addBatteryForm">
+            <div class="form-group">
+                <label for="name">Battery/Service Name:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Type:</label>
+                <select id="type" name="type" required>
+                    <option value="">Select Type</option>
+                    <option value="battery">Battery</option>
+                    <option value="charging">Charging Service</option>
+                </select>
+            </div>
+            <div class="form-group" id="capacityGroup">
+                <label for="capacity">Capacity:</label>
+                <input type="text" id="capacity" name="capacity" placeholder="E.g., 250 Wh, 3.2 kWh">
+            </div>
+            <div class="form-group" id="quantityGroup">
+                <label for="quantity">Number of Units:</label>
+                <input type="number" id="quantity" name="quantity" min="1" value="1">
+            </div>
+            <button type="submit">Add Battery/Service</button>
+            <button type="button" onclick="manageBatteries()">Cancel</button>
+        </form>
+    `;
+
+    // Add form event handlers
+    const form = document.getElementById('addBatteryForm');
+    const typeSelect = document.getElementById('type');
+    const quantityGroup = document.getElementById('quantityGroup');
+    const capacityGroup = document.getElementById('capacityGroup');
+
+    typeSelect.addEventListener('change', () => {
+        const isCharging = typeSelect.value === 'charging';
+        quantityGroup.style.display = isCharging ? 'none' : 'block';
+        capacityGroup.style.display = isCharging ? 'none' : 'block';
+        if (isCharging) {
+            document.getElementById('capacity').value = '';
+            document.getElementById('quantity').value = '0';
+        } else {
+            document.getElementById('quantity').value = '1';
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            name: form.name.value,
+            type: form.type.value,
+            capacity: form.capacity.value || null,
+            quantity: parseInt(form.quantity.value || 0)
+        };
+
+        try {
+            console.log('Submitting battery/service:', formData);
+            const response = await fetch('/api/battery-types', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            console.log('Server response:', result);
+
+            if (response.ok) {
+                alert('Battery/Service added successfully!');
+                manageBatteries();
+            } else {
+                alert(`Failed to add battery/service: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error adding battery/service:', error);
+            alert('Failed to add battery/service. Please try again.');
+        }
+    });
 }
 
 // Initialize charts
@@ -1204,70 +1138,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-function newInternetAccess() {
-    const app = document.getElementById('app');
-    app.innerHTML = `
-        <h2>New Internet Access</h2>
-        <form id="newInternetAccessForm">
-            <div class="form-group">
-                <label for="customer">Select Customer:</label>
-                <select id="customer" name="customer_id" required>
-                    <option value="">Select a customer</option>
-                </select>
-            </div>
-            <button type="submit">Create Internet Access</button>
-            <button type="button" onclick="loadInternetAccess()">Cancel</button>
-        </form>
-    `;
-
-    // Load customers
-    fetch('/api/customers')
-        .then(response => response.json())
-        .then(customers => {
-            const select = document.getElementById('customer');
-            customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
-                select.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading customers:', error);
-            alert('Error loading customers. Please try again.');
-        });
-
-    // Handle form submission
-    const form = document.getElementById('newInternetAccessForm');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = {
-            customer_id: parseInt(form.customer_id.value)
-        };
-
-        try {
-            console.log('Submitting internet access:', formData);
-            const response = await fetch('/api/internet-access', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
-
-            const result = await response.json();
-            console.log('Server response:', result);
-
-            if (response.ok) {
-                alert('Internet access created successfully!');
-                loadInternetAccess();
-            } else {
-                alert(`Failed to create internet access: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Error creating internet access:', error);
-            alert('Failed to create internet access. Please try again.');
-        }
-    });
-}
