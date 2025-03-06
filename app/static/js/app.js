@@ -381,12 +381,13 @@ function loadBatteryRentals() {
                         <th>Rental Price</th>
                         <th>Delivery Fee</th>
                         <th>Rented At</th>
+                        <th>Return Time</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="rentalsTableBody">
-                    <tr><td colspan="7">Loading rentals...</td></tr>
+                    <tr><td colspan="8">Loading rentals...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -399,7 +400,7 @@ function loadBatteryRentals() {
             const tbody = document.getElementById('rentalsTableBody');
             if (tbody) {
                 if (rentals.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7">No rentals found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8">No rentals found</td></tr>';
                     return;
                 }
                 tbody.innerHTML = rentals.map(rental => `
@@ -409,6 +410,7 @@ function loadBatteryRentals() {
                         <td>$${rental.rental_price.toFixed(2)}</td>
                         <td>$${rental.delivery_fee.toFixed(2)}</td>
                         <td>${new Date(rental.rented_at).toLocaleString()}</td>
+                        <td>${rental.returned_at ? new Date(rental.returned_at).toLocaleString() : 'N/A'}</td>
                         <td>${rental.returned_at ? 'Returned' : 'Active'}</td>
                         <td>
                             <button onclick="viewRental(${rental.id})">View</button>
@@ -422,7 +424,7 @@ function loadBatteryRentals() {
             console.error('Error loading rentals:', error);
             const tbody = document.getElementById('rentalsTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="7">Error loading rentals</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8">Error loading rentals</td></tr>';
             }
         });
 }
@@ -878,7 +880,8 @@ function manageBatteries() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <h2>Battery Management</h2>
-        <button onclick="addBattery()" class="add-button">Add New Battery/Service</button>
+        <button onclick="addBattery()" class="add-button">Add Battery/Service</button>
+        <button onclick="loadBatteryRentals()" class="back-button">Back to Rentals</button>
         <div id="batteriesList">
             <table>
                 <thead>
@@ -886,7 +889,7 @@ function manageBatteries() {
                         <th>Brand</th>
                         <th>Type</th>
                         <th>Capacity</th>
-                        <th>Unit Number</th>
+                        <th>Unit #</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -914,16 +917,23 @@ function loadBatteries() {
                 tbody.innerHTML = batteries.map(battery => `
                     <tr>
                         <td>${battery.type_name}</td>
-                        <td>${battery.type}</td>
+                        <td>${battery.type === 'battery' ? 'Battery' : 'Charging Service'}</td>
                         <td>${battery.capacity || 'N/A'}</td>
                         <td>${battery.unit_number}</td>
                         <td>${battery.status}</td>
                         <td>
                             <button onclick="updateBatteryStatus(${battery.id}, '${battery.status}')">Update Status</button>
-                            <button onclick="deleteBattery(${battery.id})" class="delete-button">Delete</button>
+                            <button onclick="deleteBattery(${battery.id})">Delete</button>
                         </td>
                     </tr>
                 `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading batteries:', error);
+            const tbody = document.getElementById('batteriesTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6">Error loading batteries</td></tr>';
             }
         });
 }
