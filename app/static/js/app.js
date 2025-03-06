@@ -758,49 +758,49 @@ function addBattery() {
     });
 }
 
-function updateBatteryQuantity(batteryId, currentQuantity) {
-    const newQuantity = prompt('Enter new quantity:', currentQuantity);
-    if (newQuantity === null) return;
-
-    const quantity = parseInt(newQuantity);
-    if (isNaN(quantity) || quantity < 0) {
-        alert('Please enter a valid number (0 or greater)');
+function returnRental(rentalId) {
+    if (!confirm('Are you sure you want to mark this rental as returned?')) {
         return;
     }
 
-    fetch(`/api/batteries/${batteryId}`, {
-        method: 'PUT',
+    fetch(`/api/rentals/${rentalId}/return`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ quantity })
+        }
     })
         .then(response => response.json())
         .then(result => {
             if (result.error) {
-                alert(`Failed to update quantity: ${result.error}`);
+                alert(`Failed to return rental: ${result.error}`);
             } else {
-                loadBatteries();
+                alert('Rental returned successfully');
+                loadBatteryRentals();
             }
         })
         .catch(error => {
-            console.error('Error updating battery quantity:', error);
-            alert('Failed to update quantity. Please try again.');
+            console.error('Error returning rental:', error);
+            alert('Failed to return rental. Please try again.');
         });
+}
+
+function viewRental(rentalId) {
+    // You can implement a detailed view for a specific rental if needed
+    alert(`Viewing details for rental ${rentalId}`);
 }
 
 function loadWaterSales() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <h2>Water Sales</h2>
-        <button onclick="newWaterSale()" class="add-button">New Sale</button>
+        <button onclick="newWaterSale()" class="add-button">New Water Sale</button>
         <div id="waterSalesList">
             <table>
                 <thead>
                     <tr>
                         <th>Customer</th>
-                        <th>Size (L)</th>
-                        <th>Date</th>
+                        <th>Size</th>
+                        <th>Sold At</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -824,7 +824,7 @@ function loadWaterSales() {
                 tbody.innerHTML = sales.map(sale => `
                     <tr>
                         <td>${sale.customer_name}</td>
-                        <td>${sale.size}</td>
+                        <td>${sale.size} liters</td>
                         <td>${new Date(sale.sold_at).toLocaleString()}</td>
                         <td>
                             <button onclick="viewWaterSale(${sale.id})">View</button>
@@ -842,17 +842,22 @@ function loadWaterSales() {
         });
 }
 
+function viewWaterSale(saleId) {
+    // You can implement a detailed view for a specific water sale if needed
+    alert(`Viewing details for water sale ${saleId}`);
+}
+
 function loadInternetAccess() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <h2>Internet Access</h2>
-        <button onclick="newInternetAccess()" class="add-button">New Access</button>
+        <button onclick="newInternetAccess()" class="add-button">New Internet Access</button>
         <div id="internetAccessList">
             <table>
                 <thead>
                     <tr>
                         <th>Customer</th>
-                        <th>Purchase Date</th>
+                        <th>Purchased At</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -887,7 +892,7 @@ function loadInternetAccess() {
             }
         })
         .catch(error => {
-            console.error('Error loading internet access records:', error);
+            console.error('Error loading internet accessrecords:', error);
             const tbody = document.getElementById('internetAccessTableBody');
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="4">Error loading internet access records</td></tr>';
@@ -895,36 +900,82 @@ function loadInternetAccess() {
         });
 }
 
-// Initialize page on load
-document.addEventListener('DOMContentLoaded', () => {
-    // Set up navigation
-    const nav = document.querySelector('nav');
-    if (nav) {
-        nav.addEventListener('click', (e) => {
-            if (e.target.matches('a')) {
-                e.preventDefault();
-                const page = e.target.dataset.page;
-                switch (page) {
-                    case 'dashboard':
-                        loadDashboard();
-                        break;
-                    case 'customers':
-                        loadCustomers();
-                        break;
-                    case 'rentals':
-                        loadBatteryRentals();
-                        break;
-                    case 'water':
-                        loadWaterSales();
-                        break;
-                    case 'internet':
-                        loadInternetAccess();
-                        break;
+function viewInternetAccess(accessId) {
+    // You can implement a detailed view for a specific internet access record if needed
+    alert(`Viewing details for internet access ${accessId}`);
+}
+
+// Initialize charts
+function createDashboardChart(data) {
+    const ctx = document.getElementById('dashboardChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Battery Rentals', 'Water Sales', 'Internet Access'],
+            datasets: [{
+                label: 'Last 30 Days',
+                data: [data.rentals, data.water_sales, data.internet_accesses],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
-        });
-    }
+        }
+    });
+}
 
-    // Load dashboard by default
+// Event listener for navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial page load
     loadDashboard();
+
+    // Navigation event delegation
+    document.querySelector('nav').addEventListener('click', function(e) {
+        if (e.target.tagName === 'A') {
+            e.preventDefault();
+            const page = e.target.dataset.page;
+
+            // Highlight the active navigation item
+            document.querySelectorAll('nav a').forEach(link => {
+                link.classList.remove('active');
+            });
+            e.target.classList.add('active');
+
+            // Load the selected page
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'customers':
+                    loadCustomers();
+                    break;
+                case 'rentals':
+                    loadBatteryRentals();
+                    break;
+                case 'water':
+                    loadWaterSales();
+                    break;
+                case 'internet':
+                    loadInternetAccess();
+                    break;
+                default:
+                    loadDashboard();
+            }
+        }
+    });
 });
