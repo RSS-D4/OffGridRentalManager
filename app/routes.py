@@ -5,6 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
 import io
+import secrets
+import string
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -416,7 +418,8 @@ def get_internet_access():
             'id': record.id,
             'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
             'purchased_at': record.purchased_at.isoformat(),
-            'status': 'Active'  # You might want to add a status field to your model
+            'wifi_password': record.wifi_password,
+            'status': 'Active'
         } for record in records]
         return jsonify(access_list)
     except Exception as e:
@@ -431,8 +434,12 @@ def create_internet_access():
 
         customer = Customer.query.get_or_404(data['customer_id'])
 
+        # Generate a random WiFi password
+        wifi_password = generate_wifi_password()
+
         internet_access = InternetAccess(
-            customer_id=customer.id
+            customer_id=customer.id,
+            wifi_password=wifi_password
         )
 
         db.session.add(internet_access)
@@ -440,12 +447,20 @@ def create_internet_access():
 
         return jsonify({
             'message': 'Internet access created successfully',
-            'internet_access_id': internet_access.id
+            'internet_access_id': internet_access.id,
+            'wifi_password': wifi_password
         }), 201
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error creating internet access: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+def generate_wifi_password(length=12):
+    # Define character sets for password
+    alphabet = string.ascii_letters + string.digits
+    # Generate password using secure random choice
+    return ''.join(secrets.choice(alphabet) for i in range(length))
+
 
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):

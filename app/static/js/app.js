@@ -778,12 +778,13 @@ function loadInternetAccess() {
                     <tr>
                         <th>Customer</th>
                         <th>Purchased At</th>
+                        <th>WiFi Password</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="internetAccessTableBody">
-                    <tr><td colspan="4">Loading internet access records...</td></tr>
+                    <tr><td colspan="5">Loading internet access records...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -796,33 +797,29 @@ function loadInternetAccess() {
             const tbody = document.getElementById('internetAccessTableBody');
             if (tbody) {
                 if (records.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4">No internet access records found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5">No internet access records found</td></tr>';
                     return;
                 }
                 tbody.innerHTML = records.map(record => `
                     <tr>
                         <td>${record.customer_name}</td>
                         <td>${new Date(record.purchased_at).toLocaleString()}</td>
+                        <td><code>${record.wifi_password}</code></td>
                         <td>${record.status}</td>
                         <td>
-                            <button onclick="viewInternetAccess(${record.id})">View</button>
+                            <button onclick="viewInternetAccess(${record.id})">View Details</button>
                         </td>
                     </tr>
                 `).join('');
             }
         })
         .catch(error => {
-            console.error('Error loading internet accessrecords:', error);
+            console.error('Error loading internet access records:', error);
             const tbody = document.getElementById('internetAccessTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4">Error loading internet access records</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">Error loading internet access records</td></tr>';
             }
         });
-}
-
-function viewInternetAccess(accessId) {
-    // You can implement a detailed view for a specific internet access record if needed
-    alert(`Viewing details for internet access ${accessId}`);
 }
 
 function newInternetAccess() {
@@ -836,7 +833,7 @@ function newInternetAccess() {
                     <option value="">Select a customer</option>
                 </select>
             </div>
-            <button type="submit">Create Internet Access</button>
+            <button type="submit">Create Access</button>
             <button type="button" onclick="loadInternetAccess()">Cancel</button>
         </form>
     `;
@@ -867,29 +864,32 @@ function newInternetAccess() {
         };
 
         try {
-            console.log('Submitting internet access:', formData);
             const response = await fetch('/api/internet-access', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
 
-            const result = await response.json();
-            console.log('Server response:', result);
+                const result = await response.json();
 
-            if (response.ok) {
-                alert('Internet access created successfully!');
-                loadInternetAccess();
-            } else {
-                alert(`Failed to create internet access: ${result.error}`);
+                if (response.ok) {
+                    alert(`Internet access created successfully!\nWiFi Password: ${result.wifi_password}`);
+                    loadInternetAccess();
+                } else {
+                    alert(`Failed to create internet access: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error creating internet access:', error);
+                alert('Failed to create internet access. Please try again.');
             }
-        } catch (error) {
-            console.error('Error creating internet access:', error);
-            alert('Failed to create internet access. Please try again.');
-        }
-    });
+        });
+}
+
+function viewInternetAccess(accessId) {
+    // You can implement a detailed view for a specific internet access record if needed
+    alert(`Viewing details for internet access ${accessId}`);
 }
 
 function manageBatteries() {

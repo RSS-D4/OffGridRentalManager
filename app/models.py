@@ -71,6 +71,7 @@ class InternetAccess(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
     purchased_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    wifi_password: Mapped[str] = mapped_column(String(20), nullable=False)
     customer: Mapped["Customer"] = relationship("Customer", backref="internet_purchases")
 
 class HealthAccess(db.Model):
