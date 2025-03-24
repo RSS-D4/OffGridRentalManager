@@ -418,8 +418,11 @@ def get_internet_access():
             'id': record.id,
             'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
             'purchased_at': record.purchased_at.isoformat(),
+            'expires_at': record.expires_at.isoformat(),
             'wifi_password': record.wifi_password,
-            'status': 'Active'
+            'duration_type': record.duration_type,
+            'price': record.price,
+            'status': 'Active' if record.expires_at > datetime.utcnow() else 'Expired'
         } for record in records]
         return jsonify(access_list)
     except Exception as e:
@@ -437,9 +440,17 @@ def create_internet_access():
         # Generate a random WiFi password
         wifi_password = generate_wifi_password()
 
+        # Calculate expiration date based on duration type
+        duration_type = data['duration_type']
+        purchased_at = datetime.utcnow()
+        expires_at = calculate_expiration_date(purchased_at, duration_type)
+
         internet_access = InternetAccess(
             customer_id=customer.id,
-            wifi_password=wifi_password
+            wifi_password=wifi_password,
+            duration_type=duration_type,
+            price=data['price'],
+            expires_at=expires_at
         )
 
         db.session.add(internet_access)
@@ -448,12 +459,25 @@ def create_internet_access():
         return jsonify({
             'message': 'Internet access created successfully',
             'internet_access_id': internet_access.id,
-            'wifi_password': wifi_password
+            'wifi_password': wifi_password,
+            'expires_at': expires_at.isoformat()
         }), 201
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error creating internet access: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+def calculate_expiration_date(start_date, duration_type):
+    if duration_type == '24h':
+        return start_date + timedelta(days=1)
+    elif duration_type == '3d':
+        return start_date + timedelta(days=3)
+    elif duration_type == '1w':
+        return start_date + timedelta(weeks=1)
+    elif duration_type == '1m':
+        return start_date + timedelta(days=30)  # Approximating a month as 30 days
+    else:
+        raise ValueError(f"Invalid duration type: {duration_type}")
 
 def generate_wifi_password(length=12):
     # Define character sets for password

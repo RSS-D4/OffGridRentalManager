@@ -1,7 +1,7 @@
 from app import db
 from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, LargeBinary, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class Customer(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -71,7 +71,10 @@ class InternetAccess(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
     purchased_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     wifi_password: Mapped[str] = mapped_column(String(20), nullable=False)
+    duration_type: Mapped[str] = mapped_column(String(20), nullable=False)  # '24h', '3d', '1w', '1m'
+    price: Mapped[float] = mapped_column(Float, nullable=False)
     customer: Mapped["Customer"] = relationship("Customer", backref="internet_purchases")
 
 class HealthAccess(db.Model):
