@@ -79,71 +79,141 @@ function loadAddCustomerForm() {
     app.innerHTML = `
         <h2>Add New Customer</h2>
         <form id="addCustomerForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="first_name">First Name:</label>
-                <input type="text" id="first_name" name="first_name" required>
-            </div>
-            <div class="form-group">
-                <label for="middle_name">Middle Name:</label>
-                <input type="text" id="middle_name" name="middle_name">
-            </div>
-            <div class="form-group">
-                <label for="family_name">Family Name:</label>
-                <input type="text" id="family_name" name="family_name" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone Number:</label>
-                <input type="tel" id="phone" name="phone" required>
-            </div>
-            <div class="form-group">
-                <label for="address">Address: (Optional)</label>
-                <input type="text" id="address" name="address">
-            </div>
-            <div class="form-group">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city">
-            </div>
-            <div class="form-group">
-                <label for="date_of_birth">Date of Birth:</label>
-                <input type="date" id="date_of_birth" name="date_of_birth" required>
-            </div>
-            <div class="form-group">
-                <label for="city_of_birth">City of Birth:</label>
-                <input type="text" id="city_of_birth" name="city_of_birth" required>
-            </div>
-            <div class="form-group">
-                <label for="id_type">ID Type:</label>
-                <select id="id_type" name="id_type" required>
-                    <option value="">Select ID Type</option>
-                    <option value="passport">Passport</option>
-                    <option value="national_id">National ID</option>
-                    <option value="drivers_license">Driver's License</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="id_number">ID Number:</label>
-                <input type="text" id="id_number" name="id_number" required>
+            <!-- Name Information -->
+            <div class="form-section">
+                <h3>Personal Information</h3>
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="middle_name">Middle Name: (Optional)</label>
+                    <input type="text" id="middle_name" name="middle_name">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="second_last_name">Second Last Name: (Optional)</label>
+                    <input type="text" id="second_last_name" name="second_last_name">
+                </div>
             </div>
 
-            <!-- Optional Photo Uploads -->
-            <div class="form-group">
-                <label for="selfie_photo">Selfie Photo (Optional):</label>
-                <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
-                <div id="selfie_preview" class="photo-preview"></div>
-            </div>
-            <div class="form-group">
-                <label for="id_photo">ID Photo (Optional):</label>
-                <input type="file" id="id_photo" name="id_photo" accept="image/*">
-                <div id="id_preview" class="photo-preview"></div>
-            </div>
-            <div class="form-group">
-                <label for="bill_photo">Bill Photo (Optional):</label>
-                <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
-                <div id="bill_preview" class="photo-preview"></div>
+            <!-- Birth Information -->
+            <div class="form-section">
+                <h3>Birth Information</h3>
+                <div class="form-group">
+                    <label for="date_of_birth">Date of Birth: (MM/DD/YYYY)</label>
+                    <input type="text" id="date_of_birth" name="date_of_birth" 
+                           pattern="\\d{2}/\\d{2}/\\d{4}" 
+                           placeholder="MM/DD/YYYY" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth_city">Birth City:</label>
+                    <input type="text" id="birth_city" name="birth_city" required>
+                </div>
             </div>
 
-            <button type="submit">Add Customer</button>
-            <button type="button" onclick="loadCustomers()">Cancel</button>
+            <!-- Contact Information -->
+            <div class="form-section">
+                <h3>Contact Information</h3>
+                <div class="form-group">
+                    <label for="phone">Phone Number: (with country code, e.g., +1234567890)</label>
+                    <input type="tel" id="phone" name="phone" 
+                           pattern="\\+[0-9]{1,}" 
+                           placeholder="+1234567890" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address: (Optional)</label>
+                    <input type="email" id="email" name="email">
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            <div class="form-section">
+                <h3>Address Information</h3>
+                <div class="form-group">
+                    <label for="address_line1">Address Line 1:</label>
+                    <input type="text" id="address_line1" name="address_line1" required>
+                </div>
+                <div class="form-group">
+                    <label for="address_line2">Address Line 2: (Optional)</label>
+                    <input type="text" id="address_line2" name="address_line2">
+                </div>
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input type="text" id="city" name="city" required>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country:</label>
+                    <input type="text" id="country" name="country" required>
+                </div>
+                <div class="form-group">
+                    <label for="state_province">State/Province: (Optional)</label>
+                    <input type="text" id="state_province" name="state_province">
+                </div>
+                <div class="form-group">
+                    <label for="postal_code">Postal Code: (Optional)</label>
+                    <input type="text" id="postal_code" name="postal_code">
+                </div>
+            </div>
+
+            <!-- Security Information -->
+            <div class="form-section">
+                <h3>Security Information</h3>
+                <div class="form-group">
+                    <label for="pin">6-Digit PIN:</label>
+                    <input type="password" id="pin" name="pin" 
+                           pattern="[0-9]{6}" 
+                           minlength="6" 
+                           maxlength="6" 
+                           required>
+                </div>
+            </div>
+
+            <!-- ID Information -->
+            <div class="form-section">
+                <h3>Identification</h3>
+                <div class="form-group">
+                    <label for="id_type">ID Type: (Optional)</label>
+                    <select id="id_type" name="id_type">
+                        <option value="">Select ID Type</option>
+                        <option value="passport">Passport</option>
+                        <option value="national_id">National ID</option>
+                        <option value="drivers_license">Driver's License</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="id_number">ID Number: (Optional)</label>
+                    <input type="text" id="id_number" name="id_number">
+                </div>
+            </div>
+
+            <!-- Photo Uploads -->
+            <div class="form-section">
+                <h3>Document Upload</h3>
+                <div class="form-group">
+                    <label for="selfie_photo">Selfie Photo: (Optional)</label>
+                    <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
+                    <div id="selfie_preview" class="photo-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="id_photo">ID Photo: (Optional)</label>
+                    <input type="file" id="id_photo" name="id_photo" accept="image/*">
+                    <div id="id_preview" class="photo-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="bill_photo">Bill Photo: (Optional)</label>
+                    <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
+                    <div id="bill_preview" class="photo-preview"></div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Add Customer</button>
+                <button type="button" onclick="loadCustomers()">Cancel</button>
+            </div>
         </form>
     `;
 
@@ -866,25 +936,25 @@ function newInternetAccess() {
         try {
             const response = await fetch('/api/internet-access', {
                 method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
 
-                const result = await response.json();
+            const result = await response.json();
 
-                if (response.ok) {
-                    alert(`Internet access created successfully!\nWiFi Password: ${result.wifi_password}`);
-                    loadInternetAccess();
-                } else {
-                    alert(`Failed to create internet access: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Error creating internet access:', error);
-                alert('Failed to create internet access. Please try again.');
+            if (response.ok) {
+                alert(`Internet access created successfully!\nWiFi Password: ${result.wifi_password}`);
+                loadInternetAccess();
+            } else {
+                alert(`Failed to create internet access: ${result.error}`);
             }
-        });
+        } catch (error) {
+            console.error('Error creating internet access:', error);
+            alert('Failed to create internet access. Please try again.');
+        }
+    });
 }
 
 function viewInternetAccess(accessId) {
