@@ -1,5 +1,5 @@
 from app import db
-from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, LargeBinary
+from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, LargeBinary, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 
@@ -72,3 +72,15 @@ class InternetAccess(db.Model):
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
     purchased_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     customer: Mapped["Customer"] = relationship("Customer", backref="internet_purchases")
+
+class HealthAccess(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(Integer, ForeignKey('customer.id'), nullable=False)
+    visit_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    symptoms: Mapped[str] = mapped_column(Text, nullable=False)
+    treatments: Mapped[str] = mapped_column(Text, nullable=False)
+    notes: Mapped[str] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Relationship with customer
+    customer: Mapped["Customer"] = relationship("Customer", backref="health_visits")

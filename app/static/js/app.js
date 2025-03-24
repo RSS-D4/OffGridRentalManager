@@ -1127,18 +1127,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDashboard();
 
     // Navigation event delegation
-    document.querySelector('nav').addEventListener('click', function(e) {
-        if (e.target.tagName === 'A') {
+    const links = document.querySelectorAll('nav a');
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
             e.preventDefault();
-            const page = e.target.dataset.page;
-
-            // Highlight the active navigation item
-            document.querySelectorAll('nav a').forEach(link => {
-                link.classList.remove('active');
-            });
-            e.target.classList.add('active');
-
-            // Load the selected page
+            const page = this.getAttribute('data-page');
             switch(page) {
                 case 'dashboard':
                     loadDashboard();
@@ -1155,9 +1148,216 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'internet':
                     loadInternetAccess();
                     break;
-                default:
-                    loadDashboard();
+                case 'health':
+                    loadHealthAccess();
+                    break;
             }
+        });
+    });
+});
+
+
+// Add these new functions after your existing code...
+
+function loadHealthAccess() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>Health Access</h2>
+        <button onclick="newHealthRecord()" class="add-button">New Health Record</button>
+        <div id="healthRecordsList">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Visit Date</th>
+                        <th>Symptoms</th>
+                        <th>Treatments</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="healthRecordsTableBody">
+                    <tr><td colspan="5">Loading health records...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    // Load health records
+    fetch('/api/health-access')
+        .then(response => response.json())
+        .then(records => {
+            const tbody = document.getElementById('healthRecordsTableBody');
+            if (tbody) {
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No health records found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = records.map(record => `
+                    <tr>
+                        <td>${record.customer_name}</td>
+                        <td>${new Date(record.visit_date).toLocaleString()}</td>
+                        <td>${record.symptoms}</td>
+                        <td>${record.treatments}</td>
+                        <td>
+                            <button onclick="viewHealthRecord(${record.id})">View Details</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading health records:', error);
+            const tbody = document.getElementById('healthRecordsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5">Error loading health records</td></tr>';
+            }
+        });
+}
+
+function newHealthRecord() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h2>New Health Record</h2>
+        <form id="newHealthRecordForm">
+            <div class="form-group">
+                <label for="customer">Select Customer:</label>
+                <select id="customer" name="customer_id" required>
+                    <option value="">Select a customer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="symptoms">Symptoms:</label>
+                <textarea id="symptoms" name="symptoms" required
+                    placeholder="Describe the symptoms..."
+                    rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="treatments">Treatments Given:</label>
+                <textarea id="treatments" name="treatments" required
+                    placeholder="List the treatments provided..."
+                    rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="notes">Additional Notes:</label>
+                <textarea id="notes" name="notes"
+                    placeholder="Any additional notes..."
+                    rows="3"></textarea>
+            </div>
+            <button type="submit">Create Record</button>
+            <button type="button" onclick="loadHealthAccess()">Cancel</button>
+        </form>
+    `;
+
+    // Load customers
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customer');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            alert('Error loading customers. Please try again.');
+        });
+
+    // Handle form submission
+    const form = document.getElementById('newHealthRecordForm');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = {
+            customer_id: parseInt(form.customer_id.value),
+            symptoms: form.symptoms.value.trim(),
+            treatments: form.treatments.value.trim(),
+            notes: form.notes.value.trim()
+        };
+
+        try {
+            const response = await fetch('/api/health-access', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Health record created successfully!');
+                loadHealthAccess();
+            } else {
+                alert(`Failed to create health record: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error creating health record:', error);
+            alert('Failed to create health record. Please try again.');
         }
     });
+}
+
+function viewHealthRecord(recordId) {
+    fetch(`/api/health-access/${recordId}`)
+        .then(response => response.json())
+        .then(record => {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <h2>Health Record Details</h2>
+                <div class="record-details">
+                    <p><strong>Customer:</strong> ${record.customer_name}</p>
+                    <p><strong>Visit Date:</strong> ${new Date(record.visit_date).toLocaleString()}</p>
+                    <p><strong>Symptoms:</strong></p>
+                    <pre>${record.symptoms}</pre>
+                    <p><strong>Treatments:</strong></p>
+                    <pre>${record.treatments}</pre>
+                    ${record.notes ? `
+                        <p><strong>Additional Notes:</strong></p>
+                        <pre>${record.notes}</pre>
+                    ` : ''}
+                </div>
+                <button onclick="loadHealthAccess()">Back to Health Records</button>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading health record details:', error);
+            alert('Failed to load health record details. Please try again.');
+        });
+}
+
+// Update the existing event listener in your navigation code to include the health access page
+document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('nav a');
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const page = this.getAttribute('data-page');
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'customers':
+                    loadCustomers();
+                    break;
+                case 'rentals':
+                    loadBatteryRentals();
+                    break;
+                case 'water':
+                    loadWaterSales();
+                    break;
+                case 'internet':
+                    loadInternetAccess();
+                    break;
+                case 'health':
+                    loadHealthAccess();
+                    break;
+            }
+        });
+    });
+
+    // Load dashboard by default
+    loadDashboard();
 });

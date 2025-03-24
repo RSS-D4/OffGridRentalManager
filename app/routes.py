@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 from app import db
-from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery, BatteryType
+from app.models import Customer, BatteryRental, WaterSale, InternetAccess, Battery, BatteryType, HealthAccess
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import logging
@@ -485,3 +485,62 @@ def get_customer_details(customer_id):
     except Exception as e:
         logger.error(f"Error getting customer {customer_id}: {str(e)}")
         return jsonify({'error': f'Failed to load customer {customer_id}'}), 500
+
+# New health access record endpoints
+@bp.route('/api/health-access', methods=['GET'])
+def get_health_records():
+    try:
+        records = HealthAccess.query.order_by(HealthAccess.visit_date.desc()).all()
+        return jsonify([{
+            'id': record.id,
+            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'visit_date': record.visit_date.isoformat(),
+            'symptoms': record.symptoms,
+            'treatments': record.treatments,
+            'notes': record.notes
+        } for record in records])
+    except Exception as e:
+        logger.error(f"Error getting health records: {str(e)}")
+        return jsonify({'error': 'Failed to load health records'}), 500
+
+@bp.route('/api/health-access', methods=['POST'])
+def create_health_record():
+    try:
+        data = request.get_json()
+        customer = Customer.query.get_or_404(data['customer_id'])
+
+        health_record = HealthAccess(
+            customer_id=customer.id,
+            symptoms=data['symptoms'],
+            treatments=data['treatments'],
+            notes=data.get('notes', '')
+        )
+
+        db.session.add(health_record)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Health record created successfully',
+            'health_record_id': health_record.id
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating health record: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/health-access/<int:record_id>', methods=['GET'])
+def get_health_record(record_id):
+    try:
+        record = HealthAccess.query.get_or_404(record_id)
+        return jsonify({
+            'id': record.id,
+            'customer_id': record.customer_id,
+            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'visit_date': record.visit_date.isoformat(),
+            'symptoms': record.symptoms,
+            'treatments': record.treatments,
+            'notes': record.notes
+        })
+    except Exception as e:
+        logger.error(f"Error getting health record {record_id}: {str(e)}")
+        return jsonify({'error': f'Failed to load health record {record_id}'}), 500
