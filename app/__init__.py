@@ -50,28 +50,28 @@ def create_app():
         try:
             default_battery_types = [
                 {
-                    'name': 'Phone Charge in the Station',
+                    'name': 'Phone Charge at Waypoint',
                     'type': 'charging',
                     'capacity': None,
+                    'rental_price': 0.28,
+                    'delivery_fee': 0.00,
                     'units': 0
                 },
                 {
                     'name': '250 Wh Anker Battery',
                     'type': 'battery',
                     'capacity': '250 Wh',
-                    'units': 5
+                    'rental_price': 0.56,
+                    'delivery_fee': 0.84,
+                    'units': 80
                 },
                 {
-                    'name': 'Large 2.4kWh Battery',
+                    'name': 'Small Portable Battery',
                     'type': 'battery',
-                    'capacity': '2.4 kWh',
-                    'units': 3
-                },
-                {
-                    'name': 'Phone Bank',
-                    'type': 'charging',
-                    'capacity': None,
-                    'units': 0
+                    'capacity': '100 Wh',
+                    'rental_price': 0.28,
+                    'delivery_fee': 0.84,
+                    'units': 5
                 }
             ]
 

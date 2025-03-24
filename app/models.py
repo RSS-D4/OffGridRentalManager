@@ -31,6 +31,8 @@ class BatteryType(db.Model):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'battery' or 'charging'
     capacity: Mapped[str] = mapped_column(String(50), nullable=True)
+    rental_price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    delivery_fee: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
     # Relationship with batteries
     batteries: Mapped[list["Battery"]] = relationship("Battery", back_populates="battery_type")
