@@ -54,7 +54,7 @@ function loadCustomers() {
             if (tbody) {
                 tbody.innerHTML = customers.map(customer => `
                     <tr>
-                        <td>${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</td>
+                        <td>${customer.first_name} ${customer.middle_name || ''} ${customer.last_name} ${customer.second_last_name || ''}</td>
                         <td>${customer.phone}</td>
                         <td>${customer.city || 'N/A'}</td>
                         <td>
@@ -271,14 +271,18 @@ function viewCustomerDetails(customerId) {
             app.innerHTML = `
                 <h2>Customer Details</h2>
                 <div class="customer-details">
-                    <p><strong>Name:</strong> ${customer.first_name} ${customer.middle_name || ''} ${customer.family_name}</p>
+                    <p><strong>Name:</strong> ${customer.first_name} ${customer.middle_name || ''} ${customer.last_name} ${customer.second_last_name || ''}</p>
                     <p><strong>Phone:</strong> ${customer.phone}</p>
-                    <p><strong>Address:</strong> ${customer.address || 'N/A'}</p>
-                    <p><strong>City:</strong> ${customer.city || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${customer.email || 'N/A'}</p>
+                    <p><strong>Address:</strong> ${customer.address_line1}${customer.address_line2 ? ', ' + customer.address_line2 : ''}</p>
+                    <p><strong>City:</strong> ${customer.city}</p>
+                    <p><strong>Country:</strong> ${customer.country}</p>
+                    <p><strong>State/Province:</strong> ${customer.state_province || 'N/A'}</p>
+                    <p><strong>Postal Code:</strong> ${customer.postal_code || 'N/A'}</p>
                     <p><strong>Date of Birth:</strong> ${customer.date_of_birth}</p>
-                    <p><strong>City of Birth:</strong> ${customer.city_of_birth}</p>
-                    <p><strong>ID Type:</strong> ${customer.id_type}</p>
-                    <p><strong>ID Number:</strong> ${customer.id_number}</p>
+                    <p><strong>City of Birth:</strong> ${customer.birth_city}</p>
+                    <p><strong>ID Type:</strong> ${customer.id_type || 'N/A'}</p>
+                    <p><strong>ID Number:</strong> ${customer.id_number || 'N/A'}</p>
 
                     <div class="photos-section">
                         <h3>Photos</h3>
@@ -331,7 +335,7 @@ async function editCustomer(customerId) {
                 </div>
                 <div class="form-group">
                     <label for="family_name">Family Name:</label>
-                    <input type="text" id="family_name" name="family_name" value="${customer.family_name}" required>
+                    <input type="text" id="family_name" name="family_name" value="${customer.last_name}" required>
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone:</label>
@@ -351,7 +355,7 @@ async function editCustomer(customerId) {
                 </div>
                 <div class="form-group">
                     <label for="city_of_birth">City of Birth:</label>
-                    <input type="text" id="city_of_birth" name="city_of_birth" value="${customer.city_of_birth}" required>
+                    <input type="text" id="city_of_birth" name="city_of_birth" value="${customer.birth_city}" required>
                 </div>
                 <div class="form-group">
                     <label for="id_type">ID Type:</label>
@@ -828,7 +832,7 @@ function returnRental(rentalId) {
 }
 
 function viewRental(rentalId) {
-    // You can implement a detailed view for a specific rental if needed
+    // You can implement a detailed view for a specific rental ifneeded
     alert(`Viewing details for rental ${rentalId}`);
 }
 
