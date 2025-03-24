@@ -246,7 +246,7 @@ def list_customers():
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.family_name,
+            'family_name': customer.last_name,
             'phone': customer.phone,
             'address': customer.address,
             'city': customer.city
@@ -263,7 +263,7 @@ def get_customer(customer_id):
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.family_name,
+            'family_name': customer.last_name,
             'phone': customer.phone,
             'address': customer.address,
             'city': customer.city,
@@ -288,14 +288,21 @@ def create_customer():
         customer = Customer(
             first_name=data['first_name'],
             middle_name=data.get('middle_name'),
-            family_name=data['family_name'],
-            phone=data['phone'],
-            address=data.get('address'),
-            city=data.get('city'),
+            last_name=data['last_name'],
+            second_last_name=data.get('second_last_name'),
             date_of_birth=data['date_of_birth'],
-            city_of_birth=data['city_of_birth'],
-            id_type=data['id_type'],
-            id_number=data['id_number']
+            birth_city=data['birth_city'],
+            phone=data['phone'],
+            email=data.get('email'),
+            address_line1=data['address_line1'],
+            address_line2=data.get('address_line2'),
+            city=data['city'],
+            country=data['country'],
+            state_province=data.get('state_province'),
+            postal_code=data.get('postal_code'),
+            pin=data['pin'],
+            id_type=data.get('id_type'),
+            id_number=data.get('id_number')
         )
 
         # Handle optional photo uploads
@@ -509,7 +516,7 @@ def get_customer_details(customer_id):
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.family_name,
+            'family_name': customer.last_name,
             'phone': customer.phone,
             'address': customer.address,
             'city': customer.city,

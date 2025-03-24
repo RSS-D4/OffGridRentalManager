@@ -334,32 +334,63 @@ async function editCustomer(customerId) {
                     <input type="text" id="middle_name" name="middle_name" value="${customer.middle_name || ''}">
                 </div>
                 <div class="form-group">
-                    <label for="family_name">Family Name:</label>
-                    <input type="text" id="family_name" name="family_name" value="${customer.last_name}" required>
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" value="${customer.last_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="second_last_name">Second Last Name:</label>
+                    <input type="text" id="second_last_name" name="second_last_name" value="${customer.second_last_name || ''}">
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone:</label>
                     <input type="tel" id="phone" name="phone" value="${customer.phone}" required>
                 </div>
                 <div class="form-group">
-                    <label for="address">Address:</label>
-                    <input type="text" id="address" name="address" value="${customer.address || ''}">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" value="${customer.email || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="address_line1">Address Line 1:</label>
+                    <input type="text" id="address_line1" name="address_line1" value="${customer.address_line1}" required>
+                </div>
+                <div class="form-group">
+                    <label for="address_line2">Address Line 2:</label>
+                    <input type="text" id="address_line2" name="address_line2" value="${customer.address_line2 || ''}">
                 </div>
                 <div class="form-group">
                     <label for="city">City:</label>
-                    <input type="text" id="city" name="city" value="${customer.city || ''}">
+                    <input type="text" id="city" name="city" value="${customer.city}" required>
                 </div>
                 <div class="form-group">
-                    <label for="date_of_birth">Date of Birth:</label>
-                    <input type="date" id="date_of_birth" name="date_of_birth" value="${customer.date_of_birth}" required>
+                    <label for="country">Country:</label>
+                    <input type="text" id="country" name="country" value="${customer.country}" required>
                 </div>
                 <div class="form-group">
-                    <label for="city_of_birth">City of Birth:</label>
-                    <input type="text" id="city_of_birth" name="city_of_birth" value="${customer.birth_city}" required>
+                    <label for="state_province">State/Province:</label>
+                    <input type="text" id="state_province" name="state_province" value="${customer.state_province || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="postal_code">Postal Code:</label>
+                    <input type="text" id="postal_code" name="postal_code" value="${customer.postal_code || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="pin">6-Digit PIN:</label>
+                    <input type="password" id="pin" name="pin" pattern="[0-9]{6}" minlength="6" maxlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth">Date of Birth: (MM/DD/YYYY)</label>
+                    <input type="text" id="date_of_birth" name="date_of_birth" 
+                           pattern="\\d{2}/\\d{2}/\\d{4}" 
+                           value="${customer.date_of_birth}" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth_city">Birth City:</label>
+                    <input type="text" id="birth_city" name="birth_city" value="${customer.birth_city}" required>
                 </div>
                 <div class="form-group">
                     <label for="id_type">ID Type:</label>
-                    <select id="id_type" name="id_type" required>
+                    <select id="id_type" name="id_type">
+                        <option value="">Select ID Type</option>
                         <option value="passport" ${customer.id_type === 'passport' ? 'selected' : ''}>Passport</option>
                         <option value="national_id" ${customer.id_type === 'national_id' ? 'selected' : ''}>National ID</option>
                         <option value="drivers_license" ${customer.id_type === 'drivers_license' ? 'selected' : ''}>Driver's License</option>
@@ -367,7 +398,7 @@ async function editCustomer(customerId) {
                 </div>
                 <div class="form-group">
                     <label for="id_number">ID Number:</label>
-                    <input type="text" id="id_number" name="id_number" value="${customer.id_number}" required>
+                    <input type="text" id="id_number" name="id_number" value="${customer.id_number || ''}">
                 </div>
 
                 <!-- Photo Upload Fields -->
@@ -547,7 +578,7 @@ async function newRental() {
         customers.forEach(customer => {
             const option = document.createElement('option');
             option.value = customer.id;
-            option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+            option.textContent = `${customer.first_name} ${customer.last_name} - ${customer.phone}`;
             customerSelect.appendChild(option);
         });
 
@@ -760,7 +791,7 @@ function newWaterSale() {
             customers.forEach(customer => {
                 const option = document.createElement('option');
                 option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                option.textContent = `${customer.first_name} ${customer.last_name} - ${customer.phone}`;
                 select.appendChild(option);
             });
         })
@@ -774,8 +805,7 @@ function newWaterSale() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = {
-            customer_id: parseInt(form.customer_id.value),
-            size: parseFloat(form.size.value),
+            customer_id: parseInt(form.customer_id.value),            size: parseFloat(form.size.value),
             price: parseFloat(form.price.value)
         };
 
@@ -920,7 +950,7 @@ function newInternetAccess() {
             customers.forEach(customer => {
                 const option = document.createElement('option');
                 option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                option.textContent = `${customer.first_name} ${customer.last_name} - ${customer.phone}`;
                 select.appendChild(option);
             });
         })
@@ -1330,7 +1360,7 @@ function newHealthRecord() {
             customers.forEach(customer => {
                 const option = document.createElement('option');
                 option.value = customer.id;
-                option.textContent = `${customer.first_name} ${customer.family_name} - ${customer.phone}`;
+                option.textContent = `${customer.first_name} ${customer.last_name} - ${customer.phone}`;
                 select.appendChild(option);
             });
         })
@@ -1435,3 +1465,37 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load dashboard by default
     loadDashboard();
 });
+
+function loadBatteries() {
+    fetch('/api/batteries')
+        .then(response => response.json())
+        .then(batteries => {
+            const tbody = document.getElementById('batteriesTableBody');
+            if (tbody) {
+                if (batteries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No batteries found</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = batteries.map(battery => `
+                    <tr>
+                        <td>${battery.type_name}</td>
+                        <td>${battery.type === 'battery' ? 'Battery' : 'Charging Service'}</td>
+                        <td>${battery.capacity || 'N/A'}</td>
+                        <td>${battery.unit_number}</td>
+                        <td>${battery.status}</td>
+                        <td>
+                            <button onclick="updateBatteryStatus(${battery.id}, '${battery.status}')">Update Status</button>
+                            <button onclick="deleteBattery(${battery.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading batteries:', error);
+            const tbody = document.getElementById('batteriesTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6">Error loading batteries</td></tr>';
+            }
+        });
+}
