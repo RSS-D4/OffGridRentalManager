@@ -296,6 +296,24 @@ def create_customer():
         for key in request.files:
             logger.debug(f"File key: {key}, Filename: {request.files[key].filename}")
 
+        # Fix special value issues
+        if not data.get('middle_name'):
+            data['middle_name'] = None
+        if not data.get('second_last_name'):
+            data['second_last_name'] = None
+        if not data.get('email'):
+            data['email'] = None
+        if not data.get('address_line2'):
+            data['address_line2'] = None
+        if not data.get('state_province'):
+            data['state_province'] = None
+        if not data.get('postal_code'):
+            data['postal_code'] = None
+        if not data.get('id_type'):
+            data['id_type'] = None
+        if not data.get('id_number'):
+            data['id_number'] = None
+
         # Create new customer instance
         customer = Customer(
             first_name=data['first_name'],

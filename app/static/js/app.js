@@ -229,6 +229,7 @@ function loadAddCustomerForm() {
                         preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
                     };
                     reader.readAsDataURL(this.files[0]);
+                    console.log(`File selected for ${id}: ${this.files[0].name}`);
                 }
             });
         }
@@ -441,6 +442,7 @@ async function editCustomer(customerId) {
                             preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
                         };
                         reader.readAsDataURL(this.files[0]);
+                        console.log(`File selected for ${id}: ${this.files[0].name}`);
                     }
                 });
             }
