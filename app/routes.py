@@ -558,20 +558,50 @@ def generate_wifi_password(length=12):
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):
     try:
+        import pillow_heif
+        from PIL import Image
+        pillow_heif.register_heif_opener()
+        
         logger.debug(f"Requested photo of type {photo_type} for customer {customer_id}")
         customer = Customer.query.get_or_404(customer_id)
+        
+        photo_data = None
         if photo_type == 'selfie' and customer.selfie_photo:
             logger.debug(f"Returning selfie photo for customer {customer_id}")
-            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_selfie.jpg")
+            photo_data = customer.selfie_photo
         elif photo_type == 'id' and customer.id_photo:
             logger.debug(f"Returning ID photo for customer {customer_id}")
-            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_id.jpg")
+            photo_data = customer.id_photo
         elif photo_type == 'bill' and customer.bill_photo:
             logger.debug(f"Returning bill photo for customer {customer_id}")
-            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_bill.jpg")
+            photo_data = customer.bill_photo
         
-        logger.warning(f"No {photo_type} photo found for customer {customer_id}")
-        return jsonify({'error': 'Photo not found'}), 404
+        if not photo_data:
+            logger.warning(f"No {photo_type} photo found for customer {customer_id}")
+            return jsonify({'error': 'Photo not found'}), 404
+        
+        # Basic validation of image header
+        try:
+            # Create a byte stream and try to open with PIL
+            img_io = io.BytesIO(photo_data)
+            img = Image.open(img_io)
+            # Convert any image to JPEG for browser compatibility
+            if img.format != 'JPEG':
+                logger.debug(f"Converting {img.format} to JPEG for browser compatibility")
+                output_io = io.BytesIO()
+                img = img.convert('RGB')  # Convert to RGB mode if needed
+                img.save(output_io, 'JPEG')
+                output_io.seek(0)
+                return send_file(output_io, mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+            else:
+                # Reset file pointer and return original
+                img_io.seek(0)
+                return send_file(img_io, mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+        except Exception as img_error:
+            logger.error(f"Image processing error: {str(img_error)}")
+            # Fallback to basic send_file with image/jpeg mimetype
+            return send_file(io.BytesIO(photo_data), mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+            
     except Exception as e:
         logger.error(f"Error getting customer photo: {str(e)}")
         return jsonify({'error': 'Failed to load photo'}), 500
