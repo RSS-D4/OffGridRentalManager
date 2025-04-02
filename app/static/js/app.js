@@ -220,13 +220,15 @@ function loadAddCustomerForm() {
     // Add photo preview functionality
     ['selfie_photo', 'id_photo', 'bill_photo'].forEach(id => {
         const input = document.getElementById(id);
-        const preview = document.getElementById(id + '_preview');
+        const preview = document.getElementById(id + (id === 'id_photo' ? '_photo' : '') + '_preview');
+        
         if (input && preview) {
             input.addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                        preview.style.display = 'flex';
                     };
                     reader.readAsDataURL(this.files[0]);
                     console.log(`File selected for ${id}: ${this.files[0].name}`);
@@ -433,13 +435,15 @@ async function editCustomer(customerId) {
         // Add photo preview functionality
         ['selfie_photo', 'id_photo', 'bill_photo'].forEach(id => {
             const input = document.getElementById(id);
-            const preview = document.getElementById(id + '_preview');
+            const previewId = id + '_preview';
+            const preview = document.getElementById(previewId);
             if (input && preview) {
                 input.addEventListener('change', function(e) {
                     if (this.files && this.files[0]) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                            preview.style.display = 'flex';
                         };
                         reader.readAsDataURL(this.files[0]);
                         console.log(`File selected for ${id}: ${this.files[0].name}`);

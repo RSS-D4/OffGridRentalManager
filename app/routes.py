@@ -558,13 +558,19 @@ def generate_wifi_password(length=12):
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):
     try:
+        logger.debug(f"Requested photo of type {photo_type} for customer {customer_id}")
         customer = Customer.query.get_or_404(customer_id)
         if photo_type == 'selfie' and customer.selfie_photo:
-            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg')
+            logger.debug(f"Returning selfie photo for customer {customer_id}")
+            return send_file(io.BytesIO(customer.selfie_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_selfie.jpg")
         elif photo_type == 'id' and customer.id_photo:
-            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg')
+            logger.debug(f"Returning ID photo for customer {customer_id}")
+            return send_file(io.BytesIO(customer.id_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_id.jpg")
         elif photo_type == 'bill' and customer.bill_photo:
-            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg')
+            logger.debug(f"Returning bill photo for customer {customer_id}")
+            return send_file(io.BytesIO(customer.bill_photo), mimetype='image/jpeg', download_name=f"customer_{customer_id}_bill.jpg")
+        
+        logger.warning(f"No {photo_type} photo found for customer {customer_id}")
         return jsonify({'error': 'Photo not found'}), 404
     except Exception as e:
         logger.error(f"Error getting customer photo: {str(e)}")
