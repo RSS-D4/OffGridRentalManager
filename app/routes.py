@@ -8,6 +8,17 @@ import io
 import secrets
 import string
 
+# Import PIL at the module level to avoid repeated imports
+try:
+    from PIL import Image
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+    have_pil = True
+    logging.debug("PIL and HEIF support available for image processing")
+except Exception as e:
+    have_pil = False
+    logging.warning(f"PIL or HEIF support not available: {str(e)}")
+
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -351,17 +362,8 @@ def create_customer():
             id_number=data.get('id_number')
         )
 
-        # Handle optional photo uploads
-        try:
-            # Try to import image processing libraries
-            from PIL import Image
-            import pillow_heif
-            pillow_heif.register_heif_opener()
-            have_pil = True
-            logger.debug("PIL and HEIF support available for image processing")
-        except Exception as e:
-            have_pil = False
-            logger.warning(f"PIL or HEIF support not available: {str(e)}")
+        # Use the PIL modules that were imported at the top level
+        logger.debug("Using PIL libraries for image processing")
 
         # Process selfie photo
         if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
@@ -510,16 +512,8 @@ def update_customer(customer_id):
         
         # Handle photo uploads in update too
         if request.files:
-            try:
-                # Try to import image processing libraries
-                from PIL import Image
-                import pillow_heif
-                pillow_heif.register_heif_opener()
-                have_pil = True
-                logger.debug("PIL and HEIF support available for image processing in update")
-            except Exception as e:
-                have_pil = False
-                logger.warning(f"PIL or HEIF support not available in update: {str(e)}")
+            # Use the PIL modules that were imported at the top level
+            logger.debug("Using PIL libraries for image processing in update")
 
             # Process selfie photo
             if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
@@ -744,15 +738,8 @@ def generate_wifi_password(length=12):
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):
     try:
-        # Try to import required libraries
-        try:
-            import pillow_heif
-            from PIL import Image
-            pillow_heif.register_heif_opener()
-            logger.debug("Successfully registered HEIF opener")
-        except Exception as import_error:
-            logger.error(f"Error importing image libraries: {str(import_error)}")
-            # Continue execution, we'll handle format-specific errors below
+        # Use the PIL modules that were imported at the top level
+        logger.debug("Using PIL libraries for processing customer photos")
         
         logger.debug(f"Requested photo of type {photo_type} for customer {customer_id}")
         customer = Customer.query.get_or_404(customer_id)

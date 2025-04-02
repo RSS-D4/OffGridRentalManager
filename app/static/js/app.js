@@ -230,7 +230,7 @@ function loadAddCustomerForm() {
                 if (this.files && this.files[0]) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                        preview.innerHTML = `<img src="${e.target.result}" class="preview-image" style="max-width: 100%; max-height: 200px;">`;
                         preview.style.display = 'flex';
                     };
                     reader.readAsDataURL(this.files[0]);
@@ -297,21 +297,21 @@ function viewCustomerDetails(customerId) {
                         ${customer.has_selfie ? `
                             <div class="photo-container">
                                 <h4>Selfie Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/selfie?t=${Date.now()}" alt="Selfie Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/selfie?cache=${Date.now()}" alt="Selfie Photo" class="customer-photo" style="max-width: 300px; height: auto;">
                             </div>
-                        ` : ''}
+                        ` : '<div class="photo-container"><h4>No Selfie Photo</h4><p>No selfie photo uploaded</p></div>'}
                         ${customer.has_id_photo ? `
                             <div class="photo-container">
                                 <h4>ID Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/id?t=${Date.now()}" alt="ID Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/id?cache=${Date.now()}" alt="ID Photo" class="customer-photo" style="max-width: 300px; height: auto;">
                             </div>
-                        ` : ''}
+                        ` : '<div class="photo-container"><h4>No ID Photo</h4><p>No ID photo uploaded</p></div>'}
                         ${customer.has_bill_photo ? `
                             <div class="photo-container">
                                 <h4>Bill Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/bill?t=${Date.now()}" alt="Bill Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/bill?cache=${Date.now()}" alt="Bill Photo" class="customer-photo" style="max-width: 300px; height: auto;">
                             </div>
-                        ` : ''}
+                        ` : '<div class="photo-container"><h4>No Bill Photo</h4><p>No bill photo uploaded</p></div>'}
                     </div>
                 </div>
                 <button onclick="loadCustomers()">Back to Customers</button>
@@ -415,7 +415,7 @@ async function editCustomer(customerId) {
                     <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
                     <div id="selfie_preview" class="photo-preview">
                         ${customer.has_selfie ? 
-                            `<img src="/api/customers/${customer.id}/photos/selfie?t=${Date.now()}" class="preview-image" alt="Current selfie photo">` : 
+                            `<img src="/api/customers/${customer.id}/photos/selfie?cache=${Date.now()}" class="preview-image" alt="Current selfie photo" style="max-width: 200px; height: auto; display: block; margin: 10px 0;">` : 
                             '<p>No current photo</p>'}
                     </div>
                 </div>
@@ -424,7 +424,7 @@ async function editCustomer(customerId) {
                     <input type="file" id="id_photo" name="id_photo" accept="image/*">
                     <div id="id_preview" class="photo-preview">
                         ${customer.has_id_photo ? 
-                            `<img src="/api/customers/${customer.id}/photos/id?t=${Date.now()}" class="preview-image" alt="Current ID photo">` : 
+                            `<img src="/api/customers/${customer.id}/photos/id?cache=${Date.now()}" class="preview-image" alt="Current ID photo" style="max-width: 200px; height: auto; display: block; margin: 10px 0;">` : 
                             '<p>No current photo</p>'}
                     </div>
                 </div>
@@ -433,7 +433,7 @@ async function editCustomer(customerId) {
                     <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
                     <div id="bill_preview" class="photo-preview">
                         ${customer.has_bill_photo ? 
-                            `<img src="/api/customers/${customer.id}/photos/bill?t=${Date.now()}" class="preview-image" alt="Current bill photo">` : 
+                            `<img src="/api/customers/${customer.id}/photos/bill?cache=${Date.now()}" class="preview-image" alt="Current bill photo" style="max-width: 200px; height: auto; display: block; margin: 10px 0;">` : 
                             '<p>No current photo</p>'}
                     </div>
                 </div>
@@ -453,7 +453,7 @@ async function editCustomer(customerId) {
                     if (this.files && this.files[0]) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            preview.innerHTML = `<img src="${e.target.result}" class="preview-image">`;
+                            preview.innerHTML = `<img src="${e.target.result}" class="preview-image" style="max-width: 100%; max-height: 200px;">`;
                             preview.style.display = 'flex';
                         };
                         reader.readAsDataURL(this.files[0]);
