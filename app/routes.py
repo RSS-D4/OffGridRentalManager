@@ -124,7 +124,7 @@ def get_rentals():
         rentals = BatteryRental.query.all()
         rental_list = [{
             'id': rental.id,
-            'customer_name': f"{rental.customer.first_name} {rental.customer.family_name}",
+            'customer_name': f"{rental.customer.first_name} {rental.customer.last_name}",
             'battery_name': f"{rental.battery.battery_type.name} (Unit #{rental.battery.unit_number})" if rental.battery else rental.battery_type.name,
             'rental_price': rental.rental_price,
             'delivery_fee': rental.delivery_fee,
@@ -246,9 +246,10 @@ def list_customers():
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.last_name,
+            'last_name': customer.last_name,
+            'second_last_name': customer.second_last_name,
             'phone': customer.phone,
-            'address': customer.address,
+            'address_line1': customer.address_line1,
             'city': customer.city
         } for customer in customers])
     except Exception as e:
@@ -263,12 +264,18 @@ def get_customer(customer_id):
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.last_name,
+            'last_name': customer.last_name,
+            'second_last_name': customer.second_last_name,
             'phone': customer.phone,
-            'address': customer.address,
+            'address_line1': customer.address_line1,
+            'address_line2': customer.address_line2,
             'city': customer.city,
+            'country': customer.country,
+            'state_province': customer.state_province,
+            'postal_code': customer.postal_code,
+            'email': customer.email,
             'date_of_birth': customer.date_of_birth,
-            'city_of_birth': customer.city_of_birth,
+            'birth_city': customer.birth_city,
             'id_type': customer.id_type,
             'id_number': customer.id_number
         })
@@ -343,17 +350,23 @@ def update_customer(customer_id):
         data = request.json
         logger.debug(f"Updating customer {customer_id} with data: {data}")
 
-        if 'first_name' not in data or 'family_name' not in data or 'phone' not in data:
+        if 'first_name' not in data or 'last_name' not in data or 'phone' not in data:
             raise KeyError('Missing required fields')
 
         customer.first_name = data['first_name']
         customer.middle_name = data.get('middle_name')
-        customer.family_name = data['family_name']
+        customer.last_name = data['last_name']
+        customer.second_last_name = data.get('second_last_name')
         customer.phone = data['phone']
-        customer.address = data.get('address')
+        customer.email = data.get('email')
+        customer.address_line1 = data.get('address_line1')
+        customer.address_line2 = data.get('address_line2')
         customer.city = data.get('city')
+        customer.country = data.get('country')
+        customer.state_province = data.get('state_province')
+        customer.postal_code = data.get('postal_code')
         customer.date_of_birth = data.get('date_of_birth')
-        customer.city_of_birth = data.get('city_of_birth')
+        customer.birth_city = data.get('birth_city')
         customer.id_type = data.get('id_type')
         customer.id_number = data.get('id_number')
 
@@ -380,7 +393,7 @@ def get_water_sales():
         sales = WaterSale.query.all()
         sales_list = [{
             'id': sale.id,
-            'customer_name': f"{sale.customer.first_name} {sale.customer.family_name}",
+            'customer_name': f"{sale.customer.first_name} {sale.customer.last_name}",
             'size': sale.size,
             'price': sale.price,
             'sold_at': sale.sold_at.isoformat()
@@ -423,7 +436,7 @@ def get_internet_access():
         records = InternetAccess.query.all()
         access_list = [{
             'id': record.id,
-            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'customer_name': f"{record.customer.first_name} {record.customer.last_name}",
             'purchased_at': record.purchased_at.isoformat(),
             'expires_at': record.expires_at.isoformat(),
             'wifi_password': record.wifi_password,
@@ -508,7 +521,7 @@ def get_customer_photo(customer_id, photo_type):
         logger.error(f"Error getting customer photo: {str(e)}")
         return jsonify({'error': 'Failed to load photo'}), 500
 
-@bp.route('/api/customers/<int:customer_id>', methods=['GET'])
+@bp.route('/api/customers/<int:customer_id>/details', methods=['GET'])
 def get_customer_details(customer_id):
     try:
         customer = Customer.query.get_or_404(customer_id)
@@ -516,12 +529,18 @@ def get_customer_details(customer_id):
             'id': customer.id,
             'first_name': customer.first_name,
             'middle_name': customer.middle_name,
-            'family_name': customer.last_name,
+            'last_name': customer.last_name,
+            'second_last_name': customer.second_last_name,
             'phone': customer.phone,
-            'address': customer.address,
+            'email': customer.email,
+            'address_line1': customer.address_line1,
+            'address_line2': customer.address_line2,
             'city': customer.city,
+            'country': customer.country,
+            'state_province': customer.state_province,
+            'postal_code': customer.postal_code,
             'date_of_birth': customer.date_of_birth,
-            'city_of_birth': customer.city_of_birth,
+            'birth_city': customer.birth_city,
             'id_type': customer.id_type,
             'id_number': customer.id_number,
             'has_selfie': bool(customer.selfie_photo),
@@ -539,7 +558,7 @@ def get_health_records():
         records = HealthAccess.query.order_by(HealthAccess.visit_date.desc()).all()
         return jsonify([{
             'id': record.id,
-            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'customer_name': f"{record.customer.first_name} {record.customer.last_name}",
             'visit_date': record.visit_date.isoformat(),
             'symptoms': record.symptoms,
             'treatments': record.treatments,
@@ -581,7 +600,7 @@ def get_health_record(record_id):
         return jsonify({
             'id': record.id,
             'customer_id': record.customer_id,
-            'customer_name': f"{record.customer.first_name} {record.customer.family_name}",
+            'customer_name': f"{record.customer.first_name} {record.customer.last_name}",
             'visit_date': record.visit_date.isoformat(),
             'symptoms': record.symptoms,
             'treatments': record.treatments,
