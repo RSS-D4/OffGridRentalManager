@@ -290,6 +290,11 @@ def create_customer():
         # Get form data
         data = request.form.to_dict()
         logger.debug(f"Received form data: {data}")
+        
+        # Debug files
+        logger.debug(f"Request files: {request.files}")
+        for key in request.files:
+            logger.debug(f"File key: {key}, Filename: {request.files[key].filename}")
 
         # Create new customer instance
         customer = Customer(
@@ -314,10 +319,13 @@ def create_customer():
 
         # Handle optional photo uploads
         if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
+            logger.debug(f"Processing selfie photo: {request.files['selfie_photo'].filename}")
             customer.selfie_photo = request.files['selfie_photo'].read()
         if 'id_photo' in request.files and request.files['id_photo'].filename:
+            logger.debug(f"Processing ID photo: {request.files['id_photo'].filename}")
             customer.id_photo = request.files['id_photo'].read()
         if 'bill_photo' in request.files and request.files['bill_photo'].filename:
+            logger.debug(f"Processing bill photo: {request.files['bill_photo'].filename}")
             customer.bill_photo = request.files['bill_photo'].read()
 
         db.session.add(customer)
@@ -347,8 +355,19 @@ def update_customer(customer_id):
     logger.info(f"Received PUT request for customer_id: {customer_id}")
     try:
         customer = Customer.query.get_or_404(customer_id)
-        data = request.json
-        logger.debug(f"Updating customer {customer_id} with data: {data}")
+        
+        # Check if we have form data or JSON
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            data = request.form.to_dict()
+            logger.debug(f"Updating customer {customer_id} with form data: {data}")
+            
+            # Debug files
+            logger.debug(f"Request files in update: {request.files}")
+            for key in request.files:
+                logger.debug(f"Update file key: {key}, Filename: {request.files[key].filename}")
+        else:
+            data = request.json
+            logger.debug(f"Updating customer {customer_id} with JSON data: {data}")
 
         if 'first_name' not in data or 'last_name' not in data or 'phone' not in data:
             raise KeyError('Missing required fields')
@@ -369,6 +388,18 @@ def update_customer(customer_id):
         customer.birth_city = data.get('birth_city')
         customer.id_type = data.get('id_type')
         customer.id_number = data.get('id_number')
+        
+        # Handle photo uploads in update too
+        if request.files:
+            if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
+                logger.debug(f"Updating selfie photo: {request.files['selfie_photo'].filename}")
+                customer.selfie_photo = request.files['selfie_photo'].read()
+            if 'id_photo' in request.files and request.files['id_photo'].filename:
+                logger.debug(f"Updating ID photo: {request.files['id_photo'].filename}")
+                customer.id_photo = request.files['id_photo'].read()
+            if 'bill_photo' in request.files and request.files['bill_photo'].filename:
+                logger.debug(f"Updating bill photo: {request.files['bill_photo'].filename}")
+                customer.bill_photo = request.files['bill_photo'].read()
 
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")

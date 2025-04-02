@@ -405,17 +405,23 @@ async function editCustomer(customerId) {
                 <div class="form-group">
                     <label for="selfie_photo">Update Selfie Photo:</label>
                     <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
-                    <div id="selfie_preview" class="photo-preview"></div>
+                    <div id="selfie_preview" class="photo-preview">
+                        ${customer.has_selfie ? '<p>Current photo exists</p>' : ''}
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="id_photo">Update ID Photo:</label>
                     <input type="file" id="id_photo" name="id_photo" accept="image/*">
-                    <div id="id_preview" class="photo-preview"></div>
+                    <div id="id_preview" class="photo-preview">
+                        ${customer.has_id_photo ? '<p>Current photo exists</p>' : ''}
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="bill_photo">Update Bill Photo:</label>
                     <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
-                    <div id="bill_preview" class="photo-preview"></div>
+                    <div id="bill_preview" class="photo-preview">
+                        ${customer.has_bill_photo ? '<p>Current photo exists</p>' : ''}
+                    </div>
                 </div>
 
                 <button type="submit">Update Customer</button>
