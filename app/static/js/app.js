@@ -937,6 +937,15 @@ function newInternetAccess() {
                     <option value="">Select a customer</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="duration_type">Duration:</label>
+                <select id="duration_type" name="duration_type" required>
+                    <option value="24h">24 Hours ($0.50)</option>
+                    <option value="3d">3 Days ($1.40)</option>
+                    <option value="1w">1 Week ($2.80)</option>
+                    <option value="1m">1 Month ($8.40)</option>
+                </select>
+            </div>
             <button type="submit">Create Access</button>
             <button type="button" onclick="loadInternetAccess()">Cancel</button>
         </form>
@@ -963,8 +972,19 @@ function newInternetAccess() {
     const form = document.getElementById('newInternetAccessForm');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Determine price based on selected duration
+        let price = 0.50;
+        const durationType = form.duration_type.value;
+        if (durationType === "24h") price = 0.50;
+        else if (durationType === "3d") price = 1.40;
+        else if (durationType === "1w") price = 2.80;
+        else if (durationType === "1m") price = 8.40;
+        
         const formData = {
-            customer_id: parseInt(form.customer_id.value)
+            customer_id: parseInt(form.customer_id.value),
+            duration_type: durationType,
+            price: price
         };
 
         try {
