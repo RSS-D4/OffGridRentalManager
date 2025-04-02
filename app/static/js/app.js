@@ -414,21 +414,27 @@ async function editCustomer(customerId) {
                     <label for="selfie_photo">Update Selfie Photo:</label>
                     <input type="file" id="selfie_photo" name="selfie_photo" accept="image/*">
                     <div id="selfie_preview" class="photo-preview">
-                        ${customer.has_selfie ? '<p>Current photo exists</p>' : ''}
+                        ${customer.has_selfie ? 
+                            `<img src="/api/customers/${customer.id}/photos/selfie?t=${Date.now()}" class="preview-image" alt="Current selfie photo">` : 
+                            '<p>No current photo</p>'}
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="id_photo">Update ID Photo:</label>
                     <input type="file" id="id_photo" name="id_photo" accept="image/*">
                     <div id="id_preview" class="photo-preview">
-                        ${customer.has_id_photo ? '<p>Current photo exists</p>' : ''}
+                        ${customer.has_id_photo ? 
+                            `<img src="/api/customers/${customer.id}/photos/id?t=${Date.now()}" class="preview-image" alt="Current ID photo">` : 
+                            '<p>No current photo</p>'}
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="bill_photo">Update Bill Photo:</label>
                     <input type="file" id="bill_photo" name="bill_photo" accept="image/*">
                     <div id="bill_preview" class="photo-preview">
-                        ${customer.has_bill_photo ? '<p>Current photo exists</p>' : ''}
+                        ${customer.has_bill_photo ? 
+                            `<img src="/api/customers/${customer.id}/photos/bill?t=${Date.now()}" class="preview-image" alt="Current bill photo">` : 
+                            '<p>No current photo</p>'}
                     </div>
                 </div>
 

@@ -313,6 +313,22 @@ def create_customer():
             data['id_type'] = None
         if not data.get('id_number'):
             data['id_number'] = None
+            
+        # Normalize phone number - ensure it has + prefix and only digits
+        if 'phone' in data:
+            phone = data['phone'].strip()
+            if not phone.startswith('+'):
+                phone = '+' + phone
+            # Remove any non-digit characters except the leading +
+            phone = '+' + ''.join(c for c in phone[1:] if c.isdigit())
+            data['phone'] = phone
+            logger.debug(f"Normalized phone number: {phone}")
+            
+            # Check if this phone number already exists
+            existing_customer = Customer.query.filter_by(phone=phone).first()
+            if existing_customer:
+                logger.warning(f"Customer with phone {phone} already exists (ID: {existing_customer.id})")
+                return jsonify({'error': 'A customer with this phone number already exists'}), 400
 
         # Create new customer instance
         customer = Customer(
@@ -336,15 +352,100 @@ def create_customer():
         )
 
         # Handle optional photo uploads
+        try:
+            # Try to import image processing libraries
+            from PIL import Image
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+            have_pil = True
+            logger.debug("PIL and HEIF support available for image processing")
+        except Exception as e:
+            have_pil = False
+            logger.warning(f"PIL or HEIF support not available: {str(e)}")
+
+        # Process selfie photo
         if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
-            logger.debug(f"Processing selfie photo: {request.files['selfie_photo'].filename}")
-            customer.selfie_photo = request.files['selfie_photo'].read()
+            file = request.files['selfie_photo']
+            logger.debug(f"Processing selfie photo: {file.filename}")
+            
+            if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                logger.debug("Processing HEIC/HEIF selfie image")
+                try:
+                    # Read the file into memory and convert to JPEG
+                    file_data = file.read()
+                    img_io = io.BytesIO(file_data)
+                    img = Image.open(img_io)
+                    
+                    # Convert to JPEG
+                    output_io = io.BytesIO()
+                    img = img.convert('RGB')
+                    img.save(output_io, 'JPEG')
+                    customer.selfie_photo = output_io.getvalue()
+                    logger.debug("Successfully converted HEIC selfie to JPEG")
+                except Exception as e:
+                    logger.error(f"Error converting HEIC selfie image: {str(e)}")
+                    # If conversion fails, save the original
+                    file.seek(0)
+                    customer.selfie_photo = file.read()
+            else:
+                # For other formats, just read the bytes
+                customer.selfie_photo = file.read()
+        
+        # Process ID photo
         if 'id_photo' in request.files and request.files['id_photo'].filename:
-            logger.debug(f"Processing ID photo: {request.files['id_photo'].filename}")
-            customer.id_photo = request.files['id_photo'].read()
+            file = request.files['id_photo']
+            logger.debug(f"Processing ID photo: {file.filename}")
+            
+            if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                logger.debug("Processing HEIC/HEIF ID image")
+                try:
+                    # Read the file into memory and convert to JPEG
+                    file_data = file.read()
+                    img_io = io.BytesIO(file_data)
+                    img = Image.open(img_io)
+                    
+                    # Convert to JPEG
+                    output_io = io.BytesIO()
+                    img = img.convert('RGB')
+                    img.save(output_io, 'JPEG')
+                    customer.id_photo = output_io.getvalue()
+                    logger.debug("Successfully converted HEIC ID to JPEG")
+                except Exception as e:
+                    logger.error(f"Error converting HEIC ID image: {str(e)}")
+                    # If conversion fails, save the original
+                    file.seek(0)
+                    customer.id_photo = file.read()
+            else:
+                # For other formats, just read the bytes
+                customer.id_photo = file.read()
+        
+        # Process bill photo
         if 'bill_photo' in request.files and request.files['bill_photo'].filename:
-            logger.debug(f"Processing bill photo: {request.files['bill_photo'].filename}")
-            customer.bill_photo = request.files['bill_photo'].read()
+            file = request.files['bill_photo']
+            logger.debug(f"Processing bill photo: {file.filename}")
+            
+            if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                logger.debug("Processing HEIC/HEIF bill image")
+                try:
+                    # Read the file into memory and convert to JPEG
+                    file_data = file.read()
+                    img_io = io.BytesIO(file_data)
+                    img = Image.open(img_io)
+                    
+                    # Convert to JPEG
+                    output_io = io.BytesIO()
+                    img = img.convert('RGB')
+                    img.save(output_io, 'JPEG')
+                    customer.bill_photo = output_io.getvalue()
+                    logger.debug("Successfully converted HEIC bill to JPEG")
+                except Exception as e:
+                    logger.error(f"Error converting HEIC bill image: {str(e)}")
+                    # If conversion fails, save the original
+                    file.seek(0)
+                    customer.bill_photo = file.read()
+            else:
+                # For other formats, just read the bytes
+                customer.bill_photo = file.read()
 
         db.session.add(customer)
         db.session.commit()
@@ -358,15 +459,15 @@ def create_customer():
     except IntegrityError as e:
         db.session.rollback()
         logger.error(f"IntegrityError while creating customer: {str(e)}")
-        return jsonify({'error': 'Phone number already exists'}), 400
+        return jsonify({'error': 'Customer could not be created. Phone number may already exist.'}), 400
     except KeyError as e:
         db.session.rollback()
         logger.error(f"KeyError while creating customer: {str(e)}")
         return jsonify({'error': f'Missing required field: {str(e)}'}), 400
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Unexpected error while creating customer: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Unexpected error creating customer: {str(e)}")
+        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
 
 @bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
 def update_customer(customer_id):
@@ -409,15 +510,100 @@ def update_customer(customer_id):
         
         # Handle photo uploads in update too
         if request.files:
+            try:
+                # Try to import image processing libraries
+                from PIL import Image
+                import pillow_heif
+                pillow_heif.register_heif_opener()
+                have_pil = True
+                logger.debug("PIL and HEIF support available for image processing in update")
+            except Exception as e:
+                have_pil = False
+                logger.warning(f"PIL or HEIF support not available in update: {str(e)}")
+
+            # Process selfie photo
             if 'selfie_photo' in request.files and request.files['selfie_photo'].filename:
-                logger.debug(f"Updating selfie photo: {request.files['selfie_photo'].filename}")
-                customer.selfie_photo = request.files['selfie_photo'].read()
+                file = request.files['selfie_photo']
+                logger.debug(f"Updating selfie photo: {file.filename}")
+                
+                if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                    logger.debug("Processing HEIC/HEIF selfie image in update")
+                    try:
+                        # Read the file into memory and convert to JPEG
+                        file_data = file.read()
+                        img_io = io.BytesIO(file_data)
+                        img = Image.open(img_io)
+                        
+                        # Convert to JPEG
+                        output_io = io.BytesIO()
+                        img = img.convert('RGB')
+                        img.save(output_io, 'JPEG')
+                        customer.selfie_photo = output_io.getvalue()
+                        logger.debug("Successfully converted HEIC selfie to JPEG in update")
+                    except Exception as e:
+                        logger.error(f"Error converting HEIC selfie image in update: {str(e)}")
+                        # If conversion fails, save the original
+                        file.seek(0)
+                        customer.selfie_photo = file.read()
+                else:
+                    # For other formats, just read the bytes
+                    customer.selfie_photo = file.read()
+                    
+            # Process ID photo
             if 'id_photo' in request.files and request.files['id_photo'].filename:
-                logger.debug(f"Updating ID photo: {request.files['id_photo'].filename}")
-                customer.id_photo = request.files['id_photo'].read()
+                file = request.files['id_photo']
+                logger.debug(f"Updating ID photo: {file.filename}")
+                
+                if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                    logger.debug("Processing HEIC/HEIF ID image in update")
+                    try:
+                        # Read the file into memory and convert to JPEG
+                        file_data = file.read()
+                        img_io = io.BytesIO(file_data)
+                        img = Image.open(img_io)
+                        
+                        # Convert to JPEG
+                        output_io = io.BytesIO()
+                        img = img.convert('RGB')
+                        img.save(output_io, 'JPEG')
+                        customer.id_photo = output_io.getvalue()
+                        logger.debug("Successfully converted HEIC ID to JPEG in update")
+                    except Exception as e:
+                        logger.error(f"Error converting HEIC ID image in update: {str(e)}")
+                        # If conversion fails, save the original
+                        file.seek(0)
+                        customer.id_photo = file.read()
+                else:
+                    # For other formats, just read the bytes
+                    customer.id_photo = file.read()
+                    
+            # Process bill photo
             if 'bill_photo' in request.files and request.files['bill_photo'].filename:
-                logger.debug(f"Updating bill photo: {request.files['bill_photo'].filename}")
-                customer.bill_photo = request.files['bill_photo'].read()
+                file = request.files['bill_photo']
+                logger.debug(f"Updating bill photo: {file.filename}")
+                
+                if have_pil and (file.filename.lower().endswith('.heic') or file.filename.lower().endswith('.heif')):
+                    logger.debug("Processing HEIC/HEIF bill image in update")
+                    try:
+                        # Read the file into memory and convert to JPEG
+                        file_data = file.read()
+                        img_io = io.BytesIO(file_data)
+                        img = Image.open(img_io)
+                        
+                        # Convert to JPEG
+                        output_io = io.BytesIO()
+                        img = img.convert('RGB')
+                        img.save(output_io, 'JPEG')
+                        customer.bill_photo = output_io.getvalue()
+                        logger.debug("Successfully converted HEIC bill to JPEG in update")
+                    except Exception as e:
+                        logger.error(f"Error converting HEIC bill image in update: {str(e)}")
+                        # If conversion fails, save the original
+                        file.seek(0)
+                        customer.bill_photo = file.read()
+                else:
+                    # For other formats, just read the bytes
+                    customer.bill_photo = file.read()
 
         db.session.commit()
         logger.info(f"Customer {customer_id} updated successfully")
@@ -558,9 +744,15 @@ def generate_wifi_password(length=12):
 @bp.route('/api/customers/<int:customer_id>/photos/<photo_type>')
 def get_customer_photo(customer_id, photo_type):
     try:
-        import pillow_heif
-        from PIL import Image
-        pillow_heif.register_heif_opener()
+        # Try to import required libraries
+        try:
+            import pillow_heif
+            from PIL import Image
+            pillow_heif.register_heif_opener()
+            logger.debug("Successfully registered HEIF opener")
+        except Exception as import_error:
+            logger.error(f"Error importing image libraries: {str(import_error)}")
+            # Continue execution, we'll handle format-specific errors below
         
         logger.debug(f"Requested photo of type {photo_type} for customer {customer_id}")
         customer = Customer.query.get_or_404(customer_id)
@@ -580,11 +772,49 @@ def get_customer_photo(customer_id, photo_type):
             logger.warning(f"No {photo_type} photo found for customer {customer_id}")
             return jsonify({'error': 'Photo not found'}), 404
         
-        # Basic validation of image header
+        # Log the first few bytes of the image to help with debugging
+        try:
+            logger.debug(f"Image data first 20 bytes: {photo_data[:20]}")
+        except Exception:
+            logger.debug("Could not log image data bytes")
+        
+        # Use a more robust approach to handle different image formats
         try:
             # Create a byte stream and try to open with PIL
             img_io = io.BytesIO(photo_data)
+            
+            # Try to determine file format from header bytes
+            file_header = photo_data[:12]
+            header_hex = ' '.join(f'{b:02x}' for b in file_header)
+            logger.debug(f"File header bytes: {header_hex}")
+            
+            # Check for HEIC/HEIF format signatures
+            is_heic = False
+            if (b'ftypheic' in photo_data[:32] or b'ftypmif1' in photo_data[:32] or 
+                b'ftyphevc' in photo_data[:32] or b'ftypheix' in photo_data[:32]):
+                logger.debug("Detected HEIC/HEIF format from header")
+                is_heic = True
+            
+            if is_heic:
+                try:
+                    img = Image.open(img_io)
+                    logger.debug(f"Successfully opened HEIC image with PIL: {img.format} {img.size}")
+                    # We need to convert HEIC to JPEG
+                    output_io = io.BytesIO()
+                    img = img.convert('RGB')
+                    img.save(output_io, 'JPEG')
+                    output_io.seek(0)
+                    logger.debug(f"Successfully converted HEIC to JPEG")
+                    return send_file(output_io, mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+                except Exception as heic_error:
+                    logger.error(f"Error processing HEIC image: {str(heic_error)}")
+                    # Fall through to generic handling
+            
+            # Try normal PIL processing for other formats
+            img_io.seek(0)  # Reset to beginning of stream
             img = Image.open(img_io)
+            logger.debug(f"Successfully opened image with PIL: {img.format} {img.size}")
+            
             # Convert any image to JPEG for browser compatibility
             if img.format != 'JPEG':
                 logger.debug(f"Converting {img.format} to JPEG for browser compatibility")
@@ -597,10 +827,24 @@ def get_customer_photo(customer_id, photo_type):
                 # Reset file pointer and return original
                 img_io.seek(0)
                 return send_file(img_io, mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+                
         except Exception as img_error:
             logger.error(f"Image processing error: {str(img_error)}")
-            # Fallback to basic send_file with image/jpeg mimetype
-            return send_file(io.BytesIO(photo_data), mimetype='image/jpeg', download_name=f"customer_{customer_id}_{photo_type}.jpg")
+            # Fallback to sending binary data with appropriate mimetype
+            # Try to guess the mimetype from the first few bytes
+            if photo_data[:3] == b'\xff\xd8\xff':
+                mimetype = 'image/jpeg'
+            elif photo_data[:8] == b'\x89PNG\r\n\x1a\n':
+                mimetype = 'image/png'
+            elif photo_data[:4] == b'GIF8':
+                mimetype = 'image/gif'
+            elif b'ftypheic' in photo_data[:32]:
+                mimetype = 'image/heic'
+            else:
+                mimetype = 'application/octet-stream'
+                
+            logger.debug(f"Using fallback with mimetype: {mimetype}")
+            return send_file(io.BytesIO(photo_data), mimetype=mimetype, download_name=f"customer_{customer_id}_{photo_type}.jpg")
             
     except Exception as e:
         logger.error(f"Error getting customer photo: {str(e)}")
