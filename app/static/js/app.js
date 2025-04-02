@@ -16,35 +16,36 @@ function loadDashboard() {
     fetch('/api/dashboard/stats')
         .then(response => response.json())
         .then(data => {
+            console.log('Dashboard data:', data);
+            
+            // Always display the fallback stats first
+            const recentActivity = document.getElementById('recentActivity');
+            if (recentActivity) {
+                recentActivity.innerHTML = `
+                    <div class="stat-card">
+                        <h4>Battery Rentals</h4>
+                        <p class="stat-number">${data.rentals || 0}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Water Sales</h4>
+                        <p class="stat-number">${data.water_sales || 0}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Internet Access</h4>
+                        <p class="stat-number">${data.internet_accesses || 0}</p>
+                    </div>
+                `;
+            }
+            
+            // Then try to create the chart as an enhancement
             try {
-                console.log('Dashboard data:', data);
-                if (!window.Chart) {
-                    console.error('Chart.js not loaded properly');
-                    throw new Error('Chart.js not loaded properly');
+                // Try to create chart, but don't worry if it fails
+                if (!createDashboardChart(data)) {
+                    console.log('Using fallback dashboard display');
                 }
-                createDashboardChart(data);
             } catch (err) {
                 console.error('Error creating chart:', err);
-                app.innerHTML += `<p class="error">Error creating chart: ${err.message}</p>`;
-                
-                // Fallback display of data without chart
-                const recentActivity = document.getElementById('recentActivity');
-                if (recentActivity) {
-                    recentActivity.innerHTML = `
-                        <div class="stat-card">
-                            <h4>Battery Rentals</h4>
-                            <p class="stat-number">${data.rentals || 0}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Water Sales</h4>
-                            <p class="stat-number">${data.water_sales || 0}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Internet Access</h4>
-                            <p class="stat-number">${data.internet_accesses || 0}</p>
-                        </div>
-                    `;
-                }
+                // We already have the fallback display, so no need to show an error
             }
         })
         .catch(error => {
