@@ -220,7 +220,10 @@ function loadAddCustomerForm() {
     // Add photo preview functionality
     ['selfie_photo', 'id_photo', 'bill_photo'].forEach(id => {
         const input = document.getElementById(id);
-        const preview = document.getElementById(id + (id === 'id_photo' ? '_photo' : '') + '_preview');
+        // Fix the preview ID for id_photo
+        const previewId = id.replace('_photo', '') + '_preview';
+        console.log(`Looking for preview element with ID: ${previewId}`);
+        const preview = document.getElementById(previewId);
         
         if (input && preview) {
             input.addEventListener('change', function(e) {
@@ -234,6 +237,8 @@ function loadAddCustomerForm() {
                     console.log(`File selected for ${id}: ${this.files[0].name}`);
                 }
             });
+        } else {
+            console.error(`Failed to find input or preview element. Input: ${input}, Preview: ${preview}, PreviewId: ${previewId}`);
         }
     });
 
@@ -292,19 +297,19 @@ function viewCustomerDetails(customerId) {
                         ${customer.has_selfie ? `
                             <div class="photo-container">
                                 <h4>Selfie Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/selfie" alt="Selfie Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/selfie?t=${Date.now()}" alt="Selfie Photo" class="customer-photo">
                             </div>
                         ` : ''}
                         ${customer.has_id_photo ? `
                             <div class="photo-container">
                                 <h4>ID Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/id" alt="ID Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/id?t=${Date.now()}" alt="ID Photo" class="customer-photo">
                             </div>
                         ` : ''}
                         ${customer.has_bill_photo ? `
                             <div class="photo-container">
                                 <h4>Bill Photo</h4>
-                                <img src="/api/customers/${customer.id}/photos/bill" alt="Bill Photo" class="customer-photo">
+                                <img src="/api/customers/${customer.id}/photos/bill?t=${Date.now()}" alt="Bill Photo" class="customer-photo">
                             </div>
                         ` : ''}
                     </div>
