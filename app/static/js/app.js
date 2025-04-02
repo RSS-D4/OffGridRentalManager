@@ -272,7 +272,7 @@ function loadAddCustomerForm() {
 }
 
 function viewCustomerDetails(customerId) {
-    fetch(`/api/customers/${customerId}`)
+    fetch(`/api/customers/${customerId}/details`)
         .then(response => response.json())
         .then(customer => {
             const app = document.getElementById('app');
@@ -326,7 +326,7 @@ function viewCustomerDetails(customerId) {
 
 async function editCustomer(customerId) {
     try {
-        const response = await fetch(`/api/customers/${customerId}`);
+        const response = await fetch(`/api/customers/${customerId}/details`);
         const customer = await response.json();
 
         const app = document.getElementById('app');
